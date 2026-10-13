@@ -1,6 +1,6 @@
 """Tests for milestones and the milestone chain."""
 
-from tests.helpers import (MIGRATION, MIGRATION_M1, MIGRATION_M2, PORTAL, PORTAL_M2, PORTAL_M3,
+from tests.helpers import (MIGRATION, MIGRATION_M1, MIGRATION_M2, PORTAL, PORTAL_M1, PORTAL_M2, PORTAL_M3,
                            ApiTestCase, day)
 
 NEW_MILESTONE = {"name": "Beta test", "goal": "Test with 50 users",
@@ -117,3 +117,59 @@ class AutoCompleteTests(ApiTestCase):
                                      query={"project_id": MIGRATION})["assignments"]
                   if a["week_start"] > "2026-10-12"]
         self.assertEqual(future, [])
+
+
+class DateCascadeTests(ApiTestCase):
+    """Moving a milestone or project start can move later milestones too."""
+
+    def test_end_date_change_moves_later_milestones(self) -> None:
+        result = self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001",
+                         {"end_date": day(35), "shift_following": True})
+        self.assertEqual(result["end_date"], day(35))
+        self.assertEqual([m["id"] for m in result["shifted_milestones"]], [PORTAL_M3])
+        m3 = self.ok("GET", f"/milestones/{PORTAL_M3}", "mgr001")
+        self.assertEqual((m3["start_date"], m3["end_date"]), (day(36), day(85)))
+
+    def test_without_the_option_only_one_milestone_moves(self) -> None:
+        self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001", {"end_date": day(35)})
+        m3 = self.ok("GET", f"/milestones/{PORTAL_M3}", "mgr001")
+        self.assertEqual((m3["start_date"], m3["end_date"]), (day(41), day(90)))
+
+    def test_running_past_project_end_needs_extension(self) -> None:
+        err = self.error("PATCH", f"/milestones/{PORTAL_M2}", "mgr001", 409, "milestones_past_project_end",
+                         {"end_date": day(45), "shift_following": True})
+        self.assertEqual(err["details"]["days_over"], 5)
+        m3 = self.ok("GET", f"/milestones/{PORTAL_M3}", "mgr001")
+        self.assertEqual(m3["end_date"], day(90))  # nothing moved
+        result = self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001",
+                         {"end_date": day(45), "shift_following": True, "extend_project": True})
+        self.assertEqual(result["project_end_date"], day(95))
+        self.assertEqual(self.ok("GET", f"/projects/{PORTAL}", "mgr001")["end_date"], day(95))
+
+    def test_completed_milestones_never_move(self) -> None:
+        self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001", {"end_date": day(30), "shift_following": True})
+        m1 = self.ok("GET", f"/milestones/{PORTAL_M1}", "mgr001")
+        self.assertEqual((m1["start_date"], m1["end_date"]), (day(-30), day(-10)))
+
+    def test_future_hours_outside_new_dates_are_released(self) -> None:
+        result = self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001", {"end_date": day(2)})
+        self.assertEqual(result["released_hours"], 1)
+
+    def test_project_start_change_moves_open_milestones(self) -> None:
+        self.error("PATCH", f"/projects/{MIGRATION}", "mgr002", 409, "milestones_past_project_end",
+                   {"start_date": day(-58), "shift_milestones": True})
+        result = self.ok("PATCH", f"/projects/{MIGRATION}", "mgr002",
+                         {"start_date": day(-58), "shift_milestones": True, "extend_project": True})
+        self.assertEqual(result["end_date"], day(12))
+        self.assertEqual(len(result["shifted_milestones"]), 2)
+        m1 = self.ok("GET", f"/milestones/{MIGRATION_M1}", "mgr002")
+        self.assertEqual(m1["start_date"], day(-58))
+
+    def test_project_start_change_keeps_completed_milestones_in_range(self) -> None:
+        self.error("PATCH", f"/projects/{PORTAL}", "mgr001", 409, "milestones_outside_dates",
+                   {"start_date": day(-27), "shift_milestones": True, "extend_project": True})
+
+    def test_unknown_or_non_boolean_options_are_ignored_safely(self) -> None:
+        result = self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001",
+                         {"end_date": day(35), "shift_following": "yes"})
+        self.assertEqual(result["shifted_milestones"], [])

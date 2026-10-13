@@ -47,6 +47,8 @@ const ERROR_TEMPLATES = {
   milestone_closed: 'Hours can only go to active milestones.',
   project_closed: 'This project is completed, abandoned, or archived. Restore it first.',
   milestones_outside_dates: 'Some milestones would fall outside the new dates.',
+  milestones_past_project_end: "The moved milestones would end {days} days after the project. Tick 'extend the project end date' or choose other dates.",
+  milestones_before_project_start: 'Some milestones would start before the project does.',
   hours_outside_dates: 'Hours are booked for weeks outside the new dates. Remove those hours first.',
   below_assigned_hours: 'Allocated hours cannot be lower than the hours already assigned.',
   has_reports: "Reassign this person's team before doing this.",
@@ -68,7 +70,7 @@ export function errorText(error, lang) {
   const template = ERROR_TEMPLATES[error.code];
   if (lang === 'en' || !template) return error.message || translate(lang, 'Something went wrong.');
   const details = error.details || {};
-  return translate(lang, template, { minutes: details.minutes, hours: details.hours_remaining });
+  return translate(lang, template, { minutes: details.minutes, hours: details.hours_remaining, days: details.days_over });
 }
 
 /** Translate one per-field validation message from the backend. */

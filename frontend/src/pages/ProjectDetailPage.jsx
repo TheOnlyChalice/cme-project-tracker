@@ -119,6 +119,15 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Builds "Saved. 2 milestones moved. 1 hour booking released." style messages.
+  const savedMessage = (base, saved) => {
+    const parts = [base];
+    if (saved?.shifted_milestones?.length) parts.push(t('{count} milestones moved.', { count: saved.shifted_milestones.length }));
+    if (saved?.project_end_date) parts.push(t('Project end moved to {date}.', { date: formatDate(saved.project_end_date) }));
+    if (saved?.released_hours) parts.push(t('{count} hour bookings released.', { count: saved.released_hours }));
+    return parts.join(' ');
+  };
+
   const completeProject = async () => {
     await api(`/projects/${id}/complete`, { method: 'POST' });
     notify(t('Project completed'));
@@ -261,13 +270,13 @@ export default function ProjectDetailPage() {
       )}
 
       {dialog?.type === 'edit' && (
-        <ProjectDialog open project={project} canPickManager={admin}
+        <ProjectDialog open project={project} canPickManager={admin} milestones={milestones}
           managers={users.filter((u) => u.role !== 'employee' && !u.is_archived)}
-          onClose={close} onSaved={() => { notify(t('Project saved')); refresh(); }} />
+          onClose={close} onSaved={(saved) => { notify(savedMessage(t('Project saved'), saved)); refresh(); }} />
       )}
       {dialog?.type === 'milestone' && (
-        <MilestoneDialog open project={project} milestone={dialog.milestone} onClose={close}
-          onSaved={() => { notify(t('Milestone saved')); refresh(); }} />
+        <MilestoneDialog open project={project} milestone={dialog.milestone} milestones={milestones} onClose={close}
+          onSaved={(saved) => { notify(savedMessage(t('Milestone saved'), saved)); refresh(); }} />
       )}
       {dialog?.type === 'assign' && (
         <AssignHoursDialog open employees={team} projects={[project]} assignment={dialog.assignment}

@@ -136,6 +136,14 @@ resets to the starter data every time the server starts.
   don't allow scheduled jobs); admins can run it any time with
   `POST /admin/maintenance`. Set `INACTIVITY_ARCHIVE_DAYS` /
   `INACTIVITY_WARNING_DAYS` to change the limits.
+- **Date cascades:** when a milestone's end date moves, `PATCH /milestones/{id}`
+  with `"shift_following": true` moves every later open milestone by the same
+  number of days; when a project's start moves, `PATCH /projects/{id}` with
+  `"shift_milestones": true` moves all open milestones. Completed milestones
+  never move. Running past the project's end is refused unless
+  `"extend_project": true` is sent. Future hours that no longer fit are released.
+- **Finishing a project:** completing the last open milestone completes and
+  archives the project. Only admins archive milestones.
 - **Translatable messages:** every risk flag includes `params` (its numbers) and
   lockout errors include `details.minutes`, so the frontend can show them in
   Spanish as well as English.

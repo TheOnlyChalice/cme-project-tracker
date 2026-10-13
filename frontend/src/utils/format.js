@@ -57,5 +57,18 @@ export function toIsoDate(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** Move a YYYY-MM-DD date by a number of days. */
+export function addDays(isoDay, days) {
+  const [year, month, day] = isoDay.split('-').map(Number);
+  return toIsoDate(new Date(year, month - 1, day + days));
+}
+
+/** Days from one YYYY-MM-DD date to another (negative if earlier). */
+export function daysBetween(fromIso, toIso) {
+  const [y1, m1, d1] = fromIso.split('-').map(Number);
+  const [y2, m2, d2] = toIso.split('-').map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+}
+
 /** The message for one form field from a backend validation error. */
 export const fieldError = (error, field) => error?.details?.[field] || '';

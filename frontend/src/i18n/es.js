@@ -230,6 +230,17 @@ const es = {
   'Restore "{name}"?': '¿Restaurar "{name}"?',
   'The milestone becomes visible again.': 'El hito vuelve a ser visible.',
   'Remove these hours?': '¿Quitar estas horas?',
+  '{days} days later': '{days} días más tarde',
+  '{days} days earlier': '{days} días antes',
+  'Also move the {count} later milestones {amount}': 'Mover también los {count} hitos siguientes {amount}',
+  'Also move the {count} open milestones {amount}': 'Mover también los {count} hitos abiertos {amount}',
+  "Extend the project's end date to {date} to fit": 'Extender la fecha de fin del proyecto al {date} para que quepan',
+  '{count} milestones moved.': '{count} hitos movidos.',
+  'Project end moved to {date}.': 'Fin del proyecto movido al {date}.',
+  '{count} hour bookings released.': '{count} reservas de horas liberadas.',
+  "The moved milestones would end {days} days after the project. Tick 'extend the project end date' or choose other dates.":
+    "Los hitos movidos terminarían {days} días después del proyecto. Marca 'extender la fecha de fin del proyecto' o elige otras fechas.",
+  'Some milestones would start before the project does.': 'Algunos hitos comenzarían antes que el proyecto.',
   'All milestones are complete, so the project was completed and archived.':
     'Todos los hitos están completos, así que el proyecto se completó y se archivó.',
   'This is the last open milestone. Completing it will also complete and archive the whole project.':

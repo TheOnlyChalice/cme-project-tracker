@@ -12,6 +12,7 @@ from app.audit import record_audit
 from app.permissions import (ADMIN, MANAGER, can_manage_project, can_view_project,
                              has_role, is_admin, require_role, EMPLOYEE)
 from app.responses import ApiError
+from app.services import schedule
 from app.services.hour_release import release_future_assignments
 from app.store import store
 from app.utils import new_id, now_iso
@@ -171,7 +172,7 @@ def _check_manager(manager_id: Any, errors: dict[str, str]) -> None:
 # Why: The data model requires end_date after start_date and milestone dates
 #      inside the project's dates. Checking on project edits too stops a date
 #      change from silently breaking existing milestones.
-def _check_dates(project_id: str | None, start: str, end: str) -> None:
+def _check_dates(project_id: str | None, start: str, end: str, skip: set[str] | None = None) -> None:
     """
     Validate project dates against each other and existing milestones.
 
@@ -179,6 +180,7 @@ def _check_dates(project_id: str | None, start: str, end: str) -> None:
         project_id: The project being edited (None when creating).
         start: Start date (YYYY-MM-DD).
         end: End date (YYYY-MM-DD).
+        skip: Milestones being moved in the same change (checked separately).
 
     Raises:
         ApiError: 400 for invalid dates, 409 if milestones fall outside them.
@@ -188,7 +190,7 @@ def _check_dates(project_id: str | None, start: str, end: str) -> None:
                        {"end_date": "Must be after the start date."})
     if project_id:
         outside = store.find("milestones", lambda m: (
-            m["start_date"] < start or m["end_date"] > end),
+            m["id"] not in (skip or set()) and (m["start_date"] < start or m["end_date"] > end)),
             where={"project_id": project_id, "is_archived": False})
         if outside:
             names = ", ".join(m["name"] for m in outside)
@@ -312,7 +314,10 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
     """
     project = get_managed_project(actor, project_id)
     check = Validator(data)
-    reject_unknown_fields(check.data, ADMIN_EDITABLE if is_admin(actor) else MANAGER_EDITABLE)
+    reject_unknown_fields(check.data, (ADMIN_EDITABLE if is_admin(actor) else MANAGER_EDITABLE)
+                          + ("shift_milestones", "extend_project"))
+    shift_milestones = check.data.pop("shift_milestones", False) is True
+    extend_project = check.data.pop("extend_project", False) is True
     if not check.data:
         raise ApiError(400, "no_changes", "Send at least one field to change.")
     check.string("name", max_length=150)
@@ -329,9 +334,27 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
     if check.has("manager_id"):
         changes["manager_id"] = check.data["manager_id"]
 
+    # [PROJECT START CASCADE HERE]
+    # How: If the start date moves and "shift_milestones" is ticked, every open
+    #      milestone moves by the same number of days. Completed milestones
+    #      stay where they are. With "extend_project" ticked, the end date
+    #      stretches to fit the moved milestones. Everything is checked before
+    #      anything is saved.
+    # Why: When a whole project starts late (or early), its plan should slide
+    #      with it rather than each milestone being re-dated by hand.
+    plan: list = []
+    new_start = changes.get("start_date", project["start_date"])
+    new_end = changes.get("end_date", project["end_date"])
+    delta = schedule.days_between(project["start_date"], new_start)
+    if shift_milestones and delta:
+        plan = [(m, schedule.shift_date(m["start_date"], delta), schedule.shift_date(m["end_date"], delta))
+                for m in schedule.open_milestones(project["id"])]
+        stretched = schedule.check_plan(plan, new_start, new_end, extend_project)
+        if stretched:
+            new_end = changes["end_date"] = stretched
     if "start_date" in changes or "end_date" in changes:
-        _check_dates(project["id"], changes.get("start_date", project["start_date"]),
-                     changes.get("end_date", project["end_date"]))
+        moving = {m["id"] for m, _, _ in plan}
+        _check_dates(project["id"], new_start, new_end, skip=moving)
     if "name" in changes and _name_taken(changes["name"], project["id"]):
         raise ApiError(409, "name_taken", "Another project already has this name.",
                        {"name": "Already in use."})
@@ -372,7 +395,10 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
     changes["updated_at"] = now_iso()
     updated = store.update(TABLE, project["id"], changes)
     record_audit(actor, "update", "project", project["id"], project, updated)
-    return serialize_project(updated, actor)
+    moved, released = schedule.apply_plan(actor, plan)
+    return {**serialize_project(updated, actor),
+            "shifted_milestones": schedule.summary(moved),
+            "released_hours": released}
 
 
 # [PROJECT STATUS CHANGES HERE]

@@ -11,6 +11,7 @@ from app.audit import record_audit
 from app.permissions import ADMIN, is_admin, require_role
 from app.responses import ApiError
 from app.services.hour_release import release_future_assignments
+from app.services import schedule
 from app.services.projects import close_project, get_managed_project, get_visible_project
 from app.store import store
 from app.utils import new_id, now_iso
@@ -231,7 +232,9 @@ def update_milestone(actor: Record, milestone_id: str, data: Any) -> Record:
     if milestone["status"] == "completed":
         raise ApiError(409, "milestone_completed", "Completed milestones can't be edited.")
     check = Validator(data)
-    reject_unknown_fields(check.data, EDITABLE)
+    reject_unknown_fields(check.data, EDITABLE + ("shift_following", "extend_project"))
+    shift_following = check.data.pop("shift_following", False) is True
+    extend_project = check.data.pop("extend_project", False) is True
     if not check.data:
         raise ApiError(400, "no_changes", "Send at least one field to change.")
     check.string("name", max_length=150)
@@ -242,13 +245,45 @@ def update_milestone(actor: Record, milestone_id: str, data: Any) -> Record:
     check.raise_if_errors()
 
     changes: Record = dict(check.cleaned)
-    if "start_date" in changes or "end_date" in changes:
-        _check_dates(project, changes.get("start_date", milestone["start_date"]),
-                     changes.get("end_date", milestone["end_date"]), milestone["id"])
-    changes["updated_at"] = now_iso()
-    updated = store.update(TABLE, milestone["id"], changes)
-    record_audit(actor, "update", "milestone", milestone["id"], milestone, updated)
-    return serialize_milestone(updated)
+    new_start = changes.pop("start_date", milestone["start_date"])
+    new_end = changes.pop("end_date", milestone["end_date"])
+    if new_end < new_start:
+        raise ApiError(400, "validation_error", "Some fields are invalid.",
+                       {"end_date": "Can't be before the start date."})
+
+    # [MILESTONE DATE CASCADE HERE]
+    # How: If the end date moves and "shift_following" is ticked, every later
+    #      open milestone (higher sequence, not completed or archived) moves by
+    #      the same number of days, start and end. With "extend_project"
+    #      ticked, the project's end date stretches to fit; otherwise running
+    #      past it is refused. Everything is checked first, then saved
+    #      together, and future hours that no longer fit are released.
+    # Why: Your rule: when one milestone finishes early or late, the ones that
+    #      depend on it should follow automatically instead of being edited one
+    #      by one. It's optional because sometimes a gap is intentional.
+    plan = [(milestone, new_start, new_end)]
+    delta = schedule.days_between(milestone["end_date"], new_end)
+    if shift_following and delta:
+        plan += [(m, schedule.shift_date(m["start_date"], delta), schedule.shift_date(m["end_date"], delta))
+                 for m in schedule.open_milestones(project["id"]) if m["sequence"] > milestone["sequence"]]
+    new_project_end = schedule.check_plan(plan, project["start_date"], project["end_date"], extend_project)
+
+    if new_project_end:
+        current = store.get("projects", project["id"])
+        extended = store.update("projects", project["id"], {"end_date": new_project_end, "updated_at": now_iso()})
+        record_audit(actor, "update", "project", project["id"], current, extended)
+    moved, released = schedule.apply_plan(actor, plan)
+
+    updated = store.get(TABLE, milestone["id"])
+    if changes:
+        changes["updated_at"] = now_iso()
+        before = updated
+        updated = store.update(TABLE, milestone["id"], changes)
+        record_audit(actor, "update", "milestone", milestone["id"], before, updated)
+    return {**serialize_milestone(updated),
+            "shifted_milestones": schedule.summary([m for m in moved if m["id"] != milestone["id"]]),
+            "released_hours": released,
+            "project_end_date": new_project_end}
 
 
 # [ACTIVE MILESTONE ADVANCE HERE]
