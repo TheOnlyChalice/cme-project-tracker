@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 from app.request import Request, parse_event
 from app.responses import ApiError, error_response, json_response
+from app.store import store
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,13 @@ class Router:
                 path_exists = True
                 if method == request.method:
                     request.path_params = params
-                    return handler(request)
+                    # [REQUEST TRANSACTION HERE]
+                    # How: The whole route runs inside one storage transaction.
+                    # Why: If any step raises an error (including an ApiError
+                    #      after some rows were written), every change from
+                    #      this request is undone, in memory and in PostgreSQL.
+                    with store.transaction():
+                        return handler(request)
 
             # [404 VS 405 HERE]
             # How: If the path matched some route but not with this method,

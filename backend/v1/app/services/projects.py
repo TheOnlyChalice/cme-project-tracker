@@ -37,8 +37,7 @@ def _active_assignments(project_id: str) -> list[Record]:
     Returns:
         Non-archived hour assignments for the project.
     """
-    return store.find("hour_assignments", lambda a: (
-        a["project_id"] == project_id and not a.get("is_archived")))
+    return store.find("hour_assignments", where={"project_id": project_id, "is_archived": False})
 
 
 def assigned_hours(project_id: str, exclude_id: str | None = None) -> Decimal:
@@ -74,8 +73,8 @@ def serialize_project(project: Record, viewer: Record) -> Record:
         The project with derived fields, safe for this viewer.
     """
     data = dict(project)
-    milestones = store.find("milestones", lambda m: (
-        m["project_id"] == project["id"] and (is_admin(viewer) or not m.get("is_archived"))))
+    milestones = store.find("milestones", lambda m: is_admin(viewer) or not m.get("is_archived"),
+                            where={"project_id": project["id"]})
     milestones.sort(key=lambda m: m["sequence"])
     assignments = _active_assignments(project["id"])
     data["milestone_ids"] = [m["id"] for m in milestones]
@@ -189,8 +188,8 @@ def _check_dates(project_id: str | None, start: str, end: str) -> None:
                        {"end_date": "Must be after the start date."})
     if project_id:
         outside = store.find("milestones", lambda m: (
-            m["project_id"] == project_id and not m.get("is_archived")
-            and (m["start_date"] < start or m["end_date"] > end)))
+            m["start_date"] < start or m["end_date"] > end),
+            where={"project_id": project_id, "is_archived": False})
         if outside:
             names = ", ".join(m["name"] for m in outside)
             raise ApiError(409, "milestones_outside_dates",

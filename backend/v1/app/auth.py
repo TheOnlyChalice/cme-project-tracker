@@ -39,7 +39,7 @@ def current_user(request: Request) -> Record:
                        "Send an X-User-Id header with your user ID or username.")
     user = store.get("users", claimed)
     if user is None:
-        matches = store.find("users", lambda u: u["username"] == claimed.lower())
+        matches = store.find("users", where={"username": claimed.lower()})
         user = matches[0] if matches else None
     if user is None or user.get("is_archived"):
         raise ApiError(401, "invalid_user", "That user doesn't exist or is archived.")

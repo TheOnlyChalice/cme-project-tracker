@@ -64,8 +64,7 @@ def _labor_costs(project_id: str, this_week: str) -> tuple[Decimal, Decimal, int
     """
     to_date = committed = Decimal("0")
     missing_salary: set[str] = set()
-    for a in store.find("hour_assignments", lambda x: (
-            x["project_id"] == project_id and not x.get("is_archived"))):
+    for a in store.find("hour_assignments", where={"project_id": project_id, "is_archived": False}):
         salary = (store.get("users", a["user_id"]) or {}).get("salary")
         if salary is None:
             missing_salary.add(a["user_id"])
@@ -100,8 +99,7 @@ def project_health(project: Record, viewer: Record, today: date) -> Record:
         A health summary, with cost fields only for managers and admins.
     """
     this_week = clock.week_start_of(today).isoformat()
-    milestones = [m for m in store.find("milestones", lambda m: (
-        m["project_id"] == project["id"] and not m.get("is_archived")))]
+    milestones = store.find("milestones", where={"project_id": project["id"], "is_archived": False})
     total = len(milestones)
     completed = sum(1 for m in milestones if m["status"] == "completed")
     overdue = [m for m in milestones
@@ -113,8 +111,8 @@ def project_health(project: Record, viewer: Record, today: date) -> Record:
     completion_pct = _percent(Decimal(completed), Decimal(total)) or Decimal(0)
     days_left = (end - today).days
 
-    hours = sum((a["hours"] for a in store.find("hour_assignments", lambda a: (
-        a["project_id"] == project["id"] and not a.get("is_archived")))), Decimal("0"))
+    hours = sum((a["hours"] for a in store.find(
+        "hour_assignments", where={"project_id": project["id"], "is_archived": False})), Decimal("0"))
     hours_pct = _percent(hours, Decimal(project["allocated_hours"]))
     cost_to_date, cost_committed, missing_salary = _labor_costs(project["id"], this_week)
     budget = project.get("budget")
@@ -217,18 +215,17 @@ def utilization(actor: Record, week: str | None) -> Record:
     """
     week_start = week_param(week)
     if is_admin(actor):
-        people = store.find("users", lambda u: u["role"] == EMPLOYEE and not u.get("is_archived"))
+        people = store.find("users", where={"role": EMPLOYEE, "is_archived": False})
     elif actor.get("role") == MANAGER:
-        people = store.find("users", lambda u: (
-            u.get("manager_id") == actor["id"] and u["role"] == EMPLOYEE and not u.get("is_archived")))
+        people = store.find("users", where={"manager_id": actor["id"], "role": EMPLOYEE,
+                                            "is_archived": False})
     else:
         people = [actor]
 
     rows = []
     for person in people:
-        assignments = store.find("hour_assignments", lambda a: (
-            a["user_id"] == person["id"] and a["week_start"] == week_start
-            and not a.get("is_archived")))
+        assignments = store.find("hour_assignments", where={
+            "user_id": person["id"], "week_start": week_start, "is_archived": False})
         assigned = sum((a["hours"] for a in assignments), Decimal("0"))
         by_project: dict[str, Decimal] = {}
         for a in assignments:

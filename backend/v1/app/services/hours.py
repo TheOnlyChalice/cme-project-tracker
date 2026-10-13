@@ -37,9 +37,8 @@ def user_week_total(user_id: str, week_start: str, exclude_id: str | None = None
     Returns:
         The total hours.
     """
-    rows = store.find(TABLE, lambda a: (
-        a["user_id"] == user_id and a["week_start"] == week_start
-        and not a.get("is_archived") and a["id"] != exclude_id))
+    rows = store.find(TABLE, lambda a: a["id"] != exclude_id,
+                      where={"user_id": user_id, "week_start": week_start, "is_archived": False})
     return sum((a["hours"] for a in rows), Decimal("0"))
 
 
@@ -199,7 +198,10 @@ def list_assignments(actor: Record, query: dict[str, str]) -> list[Record]:
             return False
         return can_view_assignment(actor, a)
 
-    rows = store.find(TABLE, matches)
+    exact = {key: query[key] for key in ("user_id", "project_id", "milestone_id") if query.get(key)}
+    if week:
+        exact["week_start"] = week
+    rows = store.find(TABLE, matches, where=exact)
     rows.sort(key=lambda a: (a["week_start"], a["user_id"]))
     return rows
 
@@ -257,15 +259,16 @@ def create_assignment(actor: Record, data: Any) -> Record:
                        {"week_start": f"The milestone runs {milestone['start_date']} to "
                                       f"{milestone['end_date']}; pick a week in that range."})
 
-    duplicate = store.find(TABLE, lambda a: (
-        a["user_id"] == employee["id"] and a["milestone_id"] == milestone["id"]
-        and a["week_start"] == week_start and not a.get("is_archived")))
+    duplicate = store.find(TABLE, where={"user_id": employee["id"], "milestone_id": milestone["id"],
+                                         "week_start": week_start, "is_archived": False})
     if duplicate:
         raise ApiError(409, "already_assigned",
                        "This employee already has hours on this milestone that week. "
                        "Edit that assignment instead.", {"assignment_id": duplicate[0]["id"]})
 
     hours = check.cleaned["hours"]
+    store.lock_row("users", employee["id"])
+    store.lock_row("projects", project["id"])
     _check_capacity(employee["id"], week_start, hours)
     _check_project_budget(project, hours)
 
@@ -327,6 +330,8 @@ def update_assignment(actor: Record, assignment_id: str, data: Any) -> Record:
     check.hours("hours", required=True)
     check.raise_if_errors()
     hours = check.cleaned["hours"]
+    store.lock_row("users", assignment["user_id"])
+    store.lock_row("projects", project["id"])
     _check_capacity(assignment["user_id"], assignment["week_start"], hours, assignment["id"])
     _check_project_budget(project, hours, assignment["id"])
     updated = store.update(TABLE, assignment["id"], {"hours": hours, "updated_at": now_iso()})
@@ -374,8 +379,8 @@ def availability(actor: Record, user_id: str, week: str | None) -> Record:
     if user is None or not can_view_user(actor, user):
         raise ApiError(404, "not_found", "User not found.")
     week_start = week_param(week)
-    rows = store.find(TABLE, lambda a: (
-        a["user_id"] == user_id and a["week_start"] == week_start and not a.get("is_archived")))
+    rows = store.find(TABLE, where={"user_id": user_id, "week_start": week_start,
+                                    "is_archived": False})
     assigned = sum((a["hours"] for a in rows), Decimal("0"))
     breakdown = []
     for a in rows:

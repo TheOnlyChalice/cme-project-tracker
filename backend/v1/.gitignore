@@ -5,6 +5,7 @@
 #      scanned by the Bandit security check in .github/workflows.
 /*
 !/.gitignore
+!/.env.sample
 !/README.md
 !/function.py
 !/dev_server.py

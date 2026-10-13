@@ -37,8 +37,8 @@ def serialize_milestone(milestone: Record) -> Record:
     # Why: Managers put people on a milestone by assigning them hours, so the
     #      hours are the single source of truth for who works on what.
     data = dict(milestone)
-    assignments = store.find("hour_assignments", lambda a: (
-        a["milestone_id"] == milestone["id"] and not a.get("is_archived")))
+    assignments = store.find("hour_assignments",
+                             where={"milestone_id": milestone["id"], "is_archived": False})
     data["assigned_employee_ids"] = sorted({a["user_id"] for a in assignments})
     return data
 
@@ -121,9 +121,9 @@ def _check_dates(project: Record, start: str, end: str, milestone_id: str | None
     if milestone_id:
         start_day, end_day = date.fromisoformat(start), date.fromisoformat(end)
         stranded = store.find("hour_assignments", lambda a: (
-            a["milestone_id"] == milestone_id and not a.get("is_archived")
-            and not (date.fromisoformat(a["week_start"]) <= end_day
-                     and date.fromisoformat(a["week_start"]) + timedelta(days=6) >= start_day)))
+            not (date.fromisoformat(a["week_start"]) <= end_day
+                     and date.fromisoformat(a["week_start"]) + timedelta(days=6) >= start_day)),
+            where={"milestone_id": milestone_id, "is_archived": False})
         if stranded:
             weeks = ", ".join(sorted({a["week_start"] for a in stranded}))
             raise ApiError(409, "hours_outside_dates",
@@ -147,9 +147,8 @@ def list_milestones(actor: Record, project_id: str, query: dict[str, str]) -> li
     include_archived = query.get("include_archived", "").lower() == "true" and is_admin(actor)
     status = query.get("status")
     milestones = store.find(TABLE, lambda m: (
-        m["project_id"] == project_id
-        and (include_archived or not m.get("is_archived"))
-        and (not status or m["status"] == status)))
+        (include_archived or not m.get("is_archived"))
+        and (not status or m["status"] == status)), where={"project_id": project_id})
     milestones.sort(key=lambda m: m["sequence"])
     return [serialize_milestone(m) for m in milestones]
 
@@ -182,7 +181,7 @@ def create_milestone(actor: Record, project_id: str, data: Any) -> Record:
     #      counting archived milestones so numbers are never reused.
     # Why: The data model asks for a sequential ID per milestone, and the
     #      sequence also defines the milestone order used for the dependency chain.
-    existing = store.find(TABLE, lambda m: m["project_id"] == project["id"])
+    existing = store.find(TABLE, where={"project_id": project["id"]})
     sequence = max((m["sequence"] for m in existing), default=0) + 1
 
     timestamp = now_iso()
@@ -269,8 +268,8 @@ def _advance_active_milestone(actor: Record, project_id: str, finished_id: str) 
     project = store.get("projects", project_id)
     if not project or project.get("active_milestone_id") != finished_id:
         return
-    remaining = store.find(TABLE, lambda m: (
-        m["project_id"] == project_id and m["status"] == "active" and not m.get("is_archived")))
+    remaining = store.find(TABLE, where={"project_id": project_id, "status": "active",
+                                         "is_archived": False})
     remaining.sort(key=lambda m: m["sequence"])
     next_id = remaining[0]["id"] if remaining else None
     updated = store.update("projects", project_id, {

@@ -1,6 +1,7 @@
 """Shared test setup: a frozen calendar, fresh data, and a request helper."""
 
 import json
+import os
 import unittest
 from datetime import date, timedelta
 from typing import Any
@@ -27,6 +28,23 @@ LAST_MONDAY = "2026-10-05"
 #      handler() tests routing, permissions, and responses together.
 class ApiTestCase(unittest.TestCase):
     """Base class for API tests."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Refuse to wipe a real database, then make sure tables exist."""
+        # [TEST DATABASE GUARD HERE]
+        # How: When the tests run against PostgreSQL, the database name must
+        #      end in "_test", or every test stops before touching it.
+        # Why: Each test empties every table before it starts. This makes it
+        #      impossible to wipe your real development data by running the
+        #      tests with the wrong settings.
+        if store.backend_name == "postgres":
+            name = os.getenv("POSTGRES_NAME", "")
+            if not name.endswith("_test"):
+                raise RuntimeError(
+                    f"Refusing to run tests against database '{name}'. "
+                    "Use a database whose name ends in _test.")
+        store.ensure_schema()
 
     def setUp(self) -> None:
         """Freeze the date and load fresh seed data."""

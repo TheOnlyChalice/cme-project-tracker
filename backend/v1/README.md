@@ -4,18 +4,46 @@ Python backend for the CME project tracking platform. Terraform deploys this
 folder as a single AWS Lambda function (Python 3.13, `function.handler`).
 Locally it runs with a small dev server that calls the same handler.
 
-Phase 1 keeps data in memory and identifies the caller with a temporary
-`X-User-Id` header. Phase 2 replaces the header with JWT login, and a later
-phase replaces in-memory storage with PostgreSQL.
+Data is stored in **PostgreSQL** (Aurora PostgreSQL on AWS). For tests and
+quick runs it can also use in-memory storage. The caller is identified with a
+temporary `X-User-Id` header until JWT login arrives in the next branch.
+
+## Storage
+
+| Where | Backend | How it's chosen |
+| --- | --- | --- |
+| AWS Lambda | Aurora PostgreSQL | The workshop injects `POSTGRES_*` settings, so PostgreSQL is used automatically |
+| Your PC with `.env` | Local PostgreSQL | `STORE_BACKEND=postgres` in `backend/v1/.env` |
+| Your PC without `.env`, and unit tests | Memory | Default when no database is configured |
+
+On first start against an empty database, the API creates its tables
+(`app/storage/schema.sql`) and adds the starter data. After that, data persists.
+`GET /health` shows which storage is in use and whether the database answers.
+
+## Set up PostgreSQL on Windows (one time)
+
+1. Install PostgreSQL 17 from https://www.postgresql.org/download/windows/
+   (the EDB installer). Keep port 5432, set a password for the `postgres`
+   user, and skip Stack Builder at the end.
+2. Create two databases, one for the app and one the tests can wipe
+   (Git Bash; enter your password when asked):
+
+   ```bash
+   "/c/Program Files/PostgreSQL/17/bin/psql.exe" -U postgres -c "CREATE DATABASE cme;"
+   "/c/Program Files/PostgreSQL/17/bin/psql.exe" -U postgres -c "CREATE DATABASE cme_test;"
+   ```
+
+3. Copy `backend/v1/.env.sample` to `backend/v1/.env` and put your password in it.
 
 ## Run locally (Git Bash on Windows)
 
 ```bash
-pip install -r backend/v1/requirements.txt   # installs tzdata (time zones on Windows)
+pip install -r backend/v1/requirements.txt   # psycopg (PostgreSQL) and tzdata (time zones)
 python backend/v1/dev_server.py
 ```
 
-The API is now at `http://localhost:3001/api/v1`. In a second terminal:
+It prints `Storage: postgres` (or `memory` without a `.env`). The API is now at
+`http://localhost:3001/api/v1`. In a second terminal:
 
 ```bash
 curl http://localhost:3001/api/v1/health
@@ -24,13 +52,24 @@ curl http://localhost:3001/api/v1/insights/at-risk -H "X-User-Id: adm001"
 
 ## Run the tests
 
+In memory (fast, no database needed):
+
 ```bash
 cd backend/v1
 python -m unittest -v
 ```
 
-The tests use only Python's standard library. To measure coverage, install the
-`coverage` package and run `coverage run -m unittest && coverage report`.
+Against PostgreSQL (the same tests, on the real database). The database name
+must end in `_test`, because every test empties all tables first:
+
+```bash
+cd backend/v1
+STORE_BACKEND=postgres POSTGRES_HOST=localhost POSTGRES_USER=postgres \
+POSTGRES_PASS=your-password POSTGRES_NAME=cme_test python -m unittest -v
+```
+
+To measure coverage, install the `coverage` package and run
+`coverage run -m unittest && coverage report`.
 
 ## Acting as a user (Phase 1 only)
 
@@ -46,7 +85,8 @@ every time the server starts (password `ChangeMe123`, used from Phase 2):
 | `emp002` | employee | mgr001 | 20 h booked this week |
 | `emp003` | employee | mgr002 | Fully booked (40 h) |
 
-Data is held in memory, so anything you create disappears when the server restarts.
+With PostgreSQL, data persists across restarts. With in-memory storage, it
+resets to the starter data every time the server starts.
 
 ## Business rules
 
@@ -61,7 +101,10 @@ Data is held in memory, so anything you create disappears when the server restar
 - **Cost:** labor cost = hours x (salary / 2,080). Compared against the project budget.
 - **Soft deletes:** nothing is deleted; items are archived and only admins restore them.
 - **Audit log:** every change is recorded; only admins can read it; entries can't
-  be edited or deleted. Password hashes are never logged.
+  be edited or deleted (enforced in Python and by a database trigger). Password
+  hashes are never logged.
+- **Transactions:** each request is all-or-nothing. If any step fails, nothing
+  it wrote is kept.
 - **At risk:** a project is flagged if it's past its end date, has an overdue
   milestone, ends within 14 days with open milestones, is more than 25 points
   behind schedule, has no milestones after starting, is forecast over budget, or
@@ -110,7 +153,10 @@ All paths are under `/api/v1`. Errors always look like
 | `app/router.py`, `app/request.py`, `app/responses.py` | Routing, request parsing, JSON responses |
 | `app/routes/` | HTTP routes, one module per domain |
 | `app/services/` | Business rules, one module per domain |
-| `app/store.py` | In-memory storage (the only file PostgreSQL will replace) |
+| `app/store.py` | Picks the storage backend at startup |
+| `app/storage/postgres.py` | PostgreSQL storage (psycopg 3) |
+| `app/storage/memory.py` | In-memory storage for tests and quick runs |
+| `app/storage/schema.sql` | Tables, constraints, indexes, audit trigger |
 | `app/auth.py` | Identifies the caller (dev header now, JWT in Phase 2) |
 | `app/permissions.py` | Roles and visibility rules |
 | `app/audit.py` | Audit log writer and filters |

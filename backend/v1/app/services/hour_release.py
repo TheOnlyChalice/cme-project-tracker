@@ -33,7 +33,7 @@ def release_future_assignments(actor: Record | None,
     """
     this_week = clock.current_week_start().isoformat()
     affected = store.find("hour_assignments", lambda a: (
-        not a.get("is_archived") and a["week_start"] > this_week and predicate(a)))
+        a["week_start"] > this_week and predicate(a)), where={"is_archived": False})
     timestamp = now_iso()
     for assignment in affected:
         updated = store.update("hour_assignments", assignment["id"],

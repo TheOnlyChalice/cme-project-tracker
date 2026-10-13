@@ -115,7 +115,10 @@ def list_audit(filters: dict[str, str]) -> dict[str, Any]:
             return False
         return True
 
-    entries = sorted(store.find("audit_log", matches), key=lambda e: e["created_at"], reverse=True)
+    exact = {key: filters[key] for key in ("actor_id", "action", "entity_type", "entity_id")
+             if filters.get(key)}
+    entries = sorted(store.find("audit_log", matches, where=exact),
+                     key=lambda e: e["created_at"], reverse=True)
     limit = _bounded_int(filters.get("limit"), default=100, low=1, high=500)
     offset = _bounded_int(filters.get("offset"), default=0, low=0, high=10**9)
     return {"total": len(entries), "limit": limit, "offset": offset,

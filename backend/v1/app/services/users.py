@@ -79,8 +79,8 @@ def current_project_ids(user: Record) -> list[str]:
     owner = user["id"] if has_role(user, MANAGER) else user.get("manager_id")
     if not owner:
         return []
-    projects = store.find("projects", lambda p: (
-        p["manager_id"] == owner and p["status"] == "active" and not p.get("is_archived")))
+    projects = store.find("projects", where={"manager_id": owner, "status": "active",
+                                             "is_archived": False})
     return [p["id"] for p in projects]
 
 
@@ -129,7 +129,7 @@ def _email_in_use(email: str, exclude_id: str | None = None) -> bool:
     Returns:
         True if the email is taken.
     """
-    return bool(store.find(TABLE, lambda u: u["email"] == email and u["id"] != exclude_id))
+    return bool(store.find(TABLE, lambda u: u["id"] != exclude_id, where={"email": email}))
 
 
 # [REPORTING LINE CHECK HERE]
@@ -175,7 +175,7 @@ def _active_admin_count() -> int:
     Returns:
         The number of active admins.
     """
-    return len(store.find(TABLE, lambda u: u["role"] == ADMIN and not u.get("is_archived")))
+    return len(store.find(TABLE, where={"role": ADMIN, "is_archived": False}))
 
 
 def _direct_reports(user_id: str) -> list[Record]:
@@ -188,7 +188,7 @@ def _direct_reports(user_id: str) -> list[Record]:
     Returns:
         The reporting users.
     """
-    return store.find(TABLE, lambda u: u.get("manager_id") == user_id and not u.get("is_archived"))
+    return store.find(TABLE, where={"manager_id": user_id, "is_archived": False})
 
 
 def create_user(actor: Record, data: Any) -> Record:
@@ -482,8 +482,8 @@ def archive_user(actor: Record, user_id: str) -> Record:
         raise ApiError(409, "self_archive", "You can't archive yourself.")
     if _direct_reports(target["id"]):
         raise ApiError(409, "has_reports", "Reassign this user's team before archiving them.")
-    if store.find("projects", lambda p: (
-            p["manager_id"] == target["id"] and p["status"] == "active" and not p.get("is_archived"))):
+    if store.find("projects", where={"manager_id": target["id"], "status": "active",
+                                     "is_archived": False}):
         raise ApiError(409, "manages_projects",
                        "Reassign this user's active projects before archiving them.")
     if target["role"] == ADMIN and _active_admin_count() <= 1:

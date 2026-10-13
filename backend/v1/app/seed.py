@@ -19,10 +19,11 @@ from app.utils import now_iso
 #      close deadline, over budget) so the dashboards have something to show.
 #      The password comes from the DEV_SEED_PASSWORD environment variable,
 #      with a dev-only default.
-# Why: In-memory data disappears whenever Lambda or the dev server restarts,
-#      and only an admin can create users, so there has to be an admin who
-#      already exists. Fixed IDs (uuid5) stay the same across restarts, so
-#      the usernames and IDs below always work in the X-User-Id header.
+# Why: Only an admin can create users, so the very first admin has to exist
+#      already. Seeding runs only when the users table is empty: in memory
+#      that's every restart; in PostgreSQL it's just the first start, after
+#      which the data persists. Fixed IDs (uuid5) mean the usernames and IDs
+#      below always work in the X-User-Id header.
 SEED_NAMESPACE = uuid.UUID("6f1c2a52-8d1e-4c43-9a57-4f3d2b9e7a10")
 DEFAULT_SEED_PASSWORD = "ChangeMe123"  # nosec B105 - dev-only default, override with env var
 
@@ -56,9 +57,18 @@ def seed_id(username: str) -> str:
 
 
 def seed_data() -> None:
-    """Add the seed users if the store has no users yet."""
-    if store.find("users"):
-        return
+    """Add the starter data if the store has no users yet."""
+    with store.transaction():
+        # Two Lambda copies starting together must not both seed the database.
+        store.lock_named("seed")
+        if store.find("users"):
+            return
+        _seed_users()
+        _seed_projects()
+
+
+def _seed_users() -> None:
+    """Add the starter users, managers before the people who report to them."""
     password_hash = hash_password(os.getenv("DEV_SEED_PASSWORD", DEFAULT_SEED_PASSWORD))
     timestamp = now_iso()
     for seed in SEED_USERS:
@@ -79,7 +89,6 @@ def seed_data() -> None:
             "created_at": timestamp,
             "updated_at": timestamp,
         })
-    _seed_projects()
 
 
 def _seed_projects() -> None:
@@ -124,19 +133,11 @@ def _seed_projects() -> None:
 
     for spec in projects:
         project_id = seed_id("project:" + spec["key"])
-        milestone_ids = []
-        for number, (name, goal, deliverables, start, end, status) in enumerate(spec["milestones"], 1):
-            milestone_id = seed_id(f"milestone:{spec['key']}:{number}")
-            milestone_ids.append((milestone_id, status))
-            store.insert("milestones", {
-                "id": milestone_id, "project_id": project_id, "sequence": number,
-                "name": name, "goal": goal, "deliverables": deliverables,
-                "start_date": start, "end_date": end, "status": status,
-                "completed_at": timestamp if status == "completed" else None,
-                "is_archived": False, "archived_at": None,
-                "created_at": timestamp, "updated_at": timestamp,
-            })
+        milestone_ids = [(seed_id(f"milestone:{spec['key']}:{number}"), m[5])
+                         for number, m in enumerate(spec["milestones"], 1)]
         active = next((mid for mid, status in milestone_ids if status == "active"), None)
+        # The project goes in first because milestones point to it. Its link to
+        # the active milestone is checked when the transaction commits.
         store.insert("projects", {
             "id": project_id, "name": spec["name"], "description": spec["description"],
             "start_date": spec["start"], "end_date": spec["end"],
@@ -145,6 +146,15 @@ def _seed_projects() -> None:
             "status": "active", "is_archived": False, "archived_at": None,
             "created_by": seed_id("adm001"), "created_at": timestamp, "updated_at": timestamp,
         })
+        for number, (name, goal, deliverables, start, end, status) in enumerate(spec["milestones"], 1):
+            store.insert("milestones", {
+                "id": milestone_ids[number - 1][0], "project_id": project_id, "sequence": number,
+                "name": name, "goal": goal, "deliverables": deliverables,
+                "start_date": start, "end_date": end, "status": status,
+                "completed_at": timestamp if status == "completed" else None,
+                "is_archived": False, "archived_at": None,
+                "created_at": timestamp, "updated_at": timestamp,
+            })
         for username, milestone_number, week_offset, hours in spec["hours"]:
             store.insert("hour_assignments", {
                 "id": seed_id(f"hours:{spec['key']}:{username}:{milestone_number}:{week_offset}"),

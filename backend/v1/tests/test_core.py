@@ -14,7 +14,9 @@ class RoutingTests(ApiTestCase):
     """The router, path handling, and error format."""
 
     def test_health_works_with_and_without_prefix(self) -> None:
-        self.assertEqual(self.ok("GET", "/health")["status"], "ok")
+        health = self.ok("GET", "/health")
+        self.assertEqual(health["status"], "ok")
+        self.assertEqual(health["database"], "reachable")
         self.assertEqual(normalize_path("/api/v1/health/"), "/health")
         self.assertEqual(normalize_path("/health"), "/health")
         self.assertEqual(normalize_path(""), "/")

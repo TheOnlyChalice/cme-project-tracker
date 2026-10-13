@@ -6,8 +6,9 @@ from typing import Any
 from app.request import Request
 from app.responses import json_response
 from app.router import Router
+from app.store import store
 
-API_VERSION = "1.0.0"
+API_VERSION = "1.1.0"
 
 
 def register(router: Router) -> None:
@@ -19,13 +20,17 @@ def register(router: Router) -> None:
     """
 
     # [HEALTH CHECK HERE]
-    # How: GET /health returns status, service name, version, and server time.
-    # Why: Gives a fast way to confirm the API is reachable, locally and after
-    #      deployment, without depending on any data or login.
+    # How: GET /health returns status, version, server time, which storage
+    #      backend is in use, and whether the database answers (503 if not).
+    # Why: Gives a fast way to confirm the API and its database are reachable,
+    #      locally and after deployment, without needing any login.
     def health(_request: Request) -> dict[str, Any]:
-        """Report that the service is running."""
-        return json_response(200, {
-            "status": "ok",
+        """Report that the service and its storage are running."""
+        database_ok = store.ping()
+        return json_response(200 if database_ok else 503, {
+            "status": "ok" if database_ok else "degraded",
+            "storage": store.backend_name,
+            "database": "reachable" if database_ok else "unreachable",
             "service": "cme-project-tracker",
             "version": API_VERSION,
             "time": datetime.now(timezone.utc).isoformat(),

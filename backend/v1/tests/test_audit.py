@@ -1,7 +1,10 @@
 """Tests for the audit log."""
 
+import unittest
+
 from app.audit import record_audit
 from app.store import store
+from app.utils import new_id
 from tests.helpers import PORTAL, ApiTestCase, uid
 
 
@@ -34,12 +37,12 @@ class AuditTests(ApiTestCase):
         self.error("GET", "/audit-log", "emp001", 403, "forbidden")
 
     def test_entries_cannot_be_changed(self) -> None:
-        entry = record_audit(None, "create", "test", "x", None, {"a": 1})
+        entry = record_audit(None, "create", "test", new_id(), None, {"a": 1})
         with self.assertRaises(PermissionError):
             store.update("audit_log", entry["id"], {"action": "update"})
         self.assertFalse(hasattr(store, "delete"))
         with self.assertRaises(ValueError):
-            record_audit(None, "delete", "test", "x", None, None)
+            record_audit(None, "delete", "test", new_id(), None, None)
 
     def test_filters_and_paging(self) -> None:
         self.ok("PATCH", f"/projects/{PORTAL}", "mgr001", {"description": "A"})
@@ -56,3 +59,28 @@ class AuditTests(ApiTestCase):
         past = self.ok("GET", "/audit-log", "adm001", query={"to": "2000-01-01", "limit": "x"})
         self.assertEqual(past["total"], 0)
         self.assertEqual(past["limit"], 100)
+
+    @unittest.skipUnless(store.backend_name == "postgres", "PostgreSQL only")
+    def test_database_trigger_blocks_changes(self) -> None:
+        self.ok("PATCH", f"/projects/{PORTAL}", "mgr001", {"description": "Logged"})
+        with self.assertRaises(Exception):
+            store._execute("UPDATE audit_log SET action = 'update'")  # pylint: disable=protected-access
+        with self.assertRaises(Exception):
+            store._execute("DELETE FROM audit_log")  # pylint: disable=protected-access
+
+
+class TransactionTests(ApiTestCase):
+    """A failed request leaves no partial changes behind."""
+
+    def test_failed_request_rolls_back(self) -> None:
+        from app.router import Router
+        from app.responses import ApiError
+        router = Router()
+
+        def half_done(_request):
+            store.update("projects", PORTAL, {"description": "half-written"})
+            raise ApiError(409, "conflict", "Stopped partway.")
+        router.add("POST", "/half", half_done)
+        result = router.dispatch({"rawPath": "/half", "requestContext": {"http": {"method": "POST"}}})
+        self.assertEqual(result["statusCode"], 409)
+        self.assertNotEqual(store.get("projects", PORTAL)["description"], "half-written")
