@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import AutoDeleteIcon from '@mui/icons-material/AutoDeleteOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   Box, Button, Card, CardActionArea, CardContent, FormControlLabel, InputAdornment, MenuItem, Paper,
@@ -8,6 +9,7 @@ import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import ProjectDialog from '../components/forms/ProjectDialog.jsx';
 import Loading from '../components/Loading.jsx';
@@ -19,6 +21,7 @@ import useDebouncedValue from '../hooks/useDebouncedValue.js';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
 import { formatDate, formatHours, fullName } from '../utils/format.js';
+import { useT } from '../i18n/LanguageContext.js';
 import { isAdmin } from '../utils/roles.js';
 
 // [PROJECT LIST HERE]
@@ -29,8 +32,10 @@ import { isAdmin } from '../utils/roles.js';
 // Why: Covers the search-and-filter requirement while making sure no filter
 //      can reveal a project the user isn't allowed to see.
 /** Searchable list of the projects the user can see. */
+/** Searchable list of the projects the user can see. */
 export default function ProjectsPage() {
   const { user } = useAuth();
+  const t = useT();
   const admin = isAdmin(user);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -39,6 +44,7 @@ export default function ProjectsPage() {
   const [status, setStatus] = useState(admin ? '' : 'active');
   const [archived, setArchived] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [sweeping, setSweeping] = useState(false);
   const query = useDebouncedValue(search);
 
   const { data, loading, error, reload } = useLoader(async () => {
@@ -55,14 +61,19 @@ export default function ProjectsPage() {
   return (
     <>
       <PageHeader
-        title="Projects"
-        subtitle={admin ? 'Every project in the company.' : user.role === 'manager' ? 'Projects you manage.' : "Your team's active projects."}
-        actions={admin && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreating(true)}>New project</Button>}
+        title={t('Projects')}
+        subtitle={admin ? t('Every project in the company.') : user.role === 'manager' ? t('Projects you manage.') : t("Your team's active projects.")}
+        actions={admin && (
+          <>
+            <Button startIcon={<AutoDeleteIcon />} onClick={() => setSweeping(true)}>{t('Archive inactive now')}</Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreating(true)}>{t('New project')}</Button>
+          </>
+        )}
       />
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }} alignItems={{ sm: 'center' }}>
         <TextField
-          label="Search projects"
+          label={t('Search projects')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           sx={{ maxWidth: { sm: 320 } }}
@@ -70,13 +81,13 @@ export default function ProjectsPage() {
         />
         {admin && (
           <>
-            <TextField select label="Status" value={status} onChange={(event) => setStatus(event.target.value)} sx={{ maxWidth: { sm: 180 } }}>
-              <MenuItem value="">All statuses</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-              <MenuItem value="abandoned">Abandoned</MenuItem>
+            <TextField select label={t('Status')} value={status} onChange={(event) => setStatus(event.target.value)} sx={{ maxWidth: { sm: 180 } }}>
+              <MenuItem value="">{t('All statuses')}</MenuItem>
+              <MenuItem value="active">{t('Active')}</MenuItem>
+              <MenuItem value="completed">{t('Completed')}</MenuItem>
+              <MenuItem value="abandoned">{t('Abandoned')}</MenuItem>
             </TextField>
-            <FormControlLabel control={<Switch checked={archived} onChange={(e) => setArchived(e.target.checked)} />} label="Include archived" />
+            <FormControlLabel control={<Switch checked={archived} onChange={(e) => setArchived(e.target.checked)} />} label={t('Include archived')} />
           </>
         )}
       </Stack>
@@ -84,7 +95,7 @@ export default function ProjectsPage() {
       <ErrorAlert error={error} onRetry={reload} />
       {loading && !data && <Loading label="Loading projects" />}
       {data && data.projects.length === 0 && (
-        <Typography color="text.secondary" sx={{ py: 4 }}>No projects match.</Typography>
+        <Typography color="text.secondary" sx={{ py: 4 }}>{t('No projects match.')}</Typography>
       )}
 
       {data && data.projects.length > 0 && (isMobile ? (
@@ -101,7 +112,7 @@ export default function ProjectsPage() {
                     {formatDate(p.start_date)} – {formatDate(p.end_date)}
                   </Typography>
                   <ProgressCell value={(Number(p.hours_assigned) / p.allocated_hours) * 100}
-                    label={`${formatHours(p.hours_assigned)} of ${p.allocated_hours} h`} />
+                    label={t('{used} of {total} h', { used: formatHours(p.hours_assigned), total: p.allocated_hours })} />
                 </CardContent>
               </CardActionArea>
             </Card>
@@ -109,14 +120,14 @@ export default function ProjectsPage() {
         </Stack>
       ) : (
         <TableContainer component={Paper} variant="outlined">
-          <Table size="small" aria-label="Projects">
+          <Table size="small" aria-label={t('Projects')}>
             <TableHead>
               <TableRow>
-                <TableCell>Project</TableCell>
-                <TableCell>Manager</TableCell>
-                <TableCell>Dates</TableCell>
-                <TableCell>Hours</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>{t('Project')}</TableCell>
+                <TableCell>{t('Manager')}</TableCell>
+                <TableCell>{t('Dates')}</TableCell>
+                <TableCell>{t('Hours')}</TableCell>
+                <TableCell>{t('Status')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -130,7 +141,7 @@ export default function ProjectsPage() {
                   <TableCell>{formatDate(p.start_date)} – {formatDate(p.end_date)}</TableCell>
                   <TableCell>
                     <ProgressCell value={(Number(p.hours_assigned) / p.allocated_hours) * 100}
-                      label={`${formatHours(p.hours_assigned)} of ${p.allocated_hours} h`} />
+                      label={t('{used} of {total} h', { used: formatHours(p.hours_assigned), total: p.allocated_hours })} />
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={0.5}>
@@ -145,6 +156,24 @@ export default function ProjectsPage() {
         </TableContainer>
       ))}
 
+      {/* [ARCHIVE INACTIVE BUTTON HERE]
+          How: Admins can run the two-week inactivity rule immediately; the
+               result says how many projects were archived.
+          Why: The rule also runs by itself every hour, but this lets admins
+               apply it on demand (useful for demos and clean-ups). */}
+      <ConfirmDialog
+        open={sweeping}
+        title={t('Archive inactive projects now?')}
+        message={t('Projects with no activity for 14 days and no upcoming hours will be archived. Admins can restore them.')}
+        confirmLabel="Archive"
+        color="warning"
+        onConfirm={async () => {
+          const result = await api('/admin/maintenance', { method: 'POST' });
+          notify(t('{count} projects archived', { count: result.archived.length }));
+          reload();
+        }}
+        onClose={() => setSweeping(false)}
+      />
       {creating && (
         <ProjectDialog
           open
@@ -152,7 +181,7 @@ export default function ProjectsPage() {
           canPickManager
           onClose={() => setCreating(false)}
           onSaved={(project) => {
-            notify(`Created "${project.name}"`);
+            notify(t('Created "{name}"', { name: project.name }));
             navigate(`/projects/${project.id}`);
           }}
         />

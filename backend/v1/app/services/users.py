@@ -197,6 +197,24 @@ def _direct_reports(user_id: str) -> list[Record]:
     return store.find(TABLE, where={"manager_id": user_id, "is_archived": False})
 
 
+# [SAFE PICTURE LINK HERE]
+# How: A profile picture link must start with http:// or https://.
+# Why: Found in the role-overlap review: without this, someone could save a
+#      "javascript:" or "data:" link that other people's browsers would load
+#      when showing their avatar. Only plain web links are allowed.
+def _check_picture_url(check: Validator) -> None:
+    """
+    Reject profile picture links that aren't plain web addresses.
+
+    Args:
+        check: The validator holding the cleaned value.
+    """
+    url = check.cleaned.get("profile_picture_url")
+    if url and not url.lower().startswith(("http://", "https://")):
+        check.errors["profile_picture_url"] = "Must be a web link starting with http:// or https://."
+        del check.cleaned["profile_picture_url"]
+
+
 def create_user(actor: Record, data: Any) -> Record:
     """
     Create a user (admins only).
@@ -221,6 +239,7 @@ def create_user(actor: Record, data: Any) -> Record:
     check.string("job_title", max_length=100, allow_empty=True)
     check.money("salary")
     check.string("profile_picture_url", max_length=500, allow_empty=True)
+    _check_picture_url(check)
 
     problem = password_problem(check.data.get("password"))
     if problem:
@@ -389,6 +408,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     check.string("last_name", max_length=100)
     check.email("email")
     check.string("profile_picture_url", max_length=500, allow_empty=True)
+    _check_picture_url(check)
     check.choice("role", ROLES)
     check.string("job_title", max_length=100, allow_empty=True)
     check.money("salary")
@@ -438,6 +458,15 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     if target["role"] in (MANAGER, ADMIN) and new_role == EMPLOYEE and _direct_reports(target["id"]):
         raise ApiError(409, "has_reports",
                        "Reassign this user's team to another manager before changing their role.")
+    # [DEMOTED MANAGER CHECK HERE]
+    # How: Someone who still manages an open project can't be made an employee.
+    # Why: Found in the role-overlap review: otherwise a project could end up
+    #      "managed" by an employee, who could then edit it and assign hours
+    #      even though employees aren't allowed to.
+    if target["role"] in (MANAGER, ADMIN) and new_role == EMPLOYEE and store.find(
+            "projects", where={"manager_id": target["id"], "status": "active", "is_archived": False}):
+        raise ApiError(409, "manages_projects",
+                       "Reassign this user's active projects before making them an employee.")
     if target["role"] == ADMIN and new_role != ADMIN and _active_admin_count() <= 1:
         raise ApiError(409, "last_admin", "You can't remove the last admin.")
 

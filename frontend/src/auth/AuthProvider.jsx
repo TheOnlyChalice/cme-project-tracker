@@ -15,12 +15,12 @@ import { AuthContext } from './AuthContext.js';
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(() => loadSession()?.user || null);
   const [checking, setChecking] = useState(() => Boolean(loadSession()));
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(null);
 
   useEffect(() => {
-    setSessionEndedHandler((message) => {
+    setSessionEndedHandler((reason) => {
       setUser(null);
-      setNotice(message);
+      setNotice(reason);
     });
     if (!loadSession()) return;
     api('/me')
@@ -39,7 +39,7 @@ export default function AuthProvider({ children }) {
   const login = useCallback(async (username, password) => {
     const session = await api('/auth/login', { method: 'POST', body: { username, password }, auth: false });
     saveSession(session);
-    setNotice('');
+    setNotice(null);
     setUser(session.user);
     return session.user;
   }, []);

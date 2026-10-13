@@ -128,6 +128,17 @@ resets to the starter data every time the server starts.
 - **Audit log:** every change is recorded; only admins can read it; entries can't
   be edited or deleted (enforced in Python and by a database trigger). Password
   hashes are never logged.
+- **Auto-archive:** a project with no activity (no change to it, its milestones,
+  or its hours) for 14 days, and no hours booked from the current week on, is
+  archived automatically, recorded in the audit log as "System". From day 10 it
+  carries an `inactive` risk flag. The check runs at most once an hour per
+  Lambda copy, triggered by normal requests (the workshop's AWS permissions
+  don't allow scheduled jobs); admins can run it any time with
+  `POST /admin/maintenance`. Set `INACTIVITY_ARCHIVE_DAYS` /
+  `INACTIVITY_WARNING_DAYS` to change the limits.
+- **Translatable messages:** every risk flag includes `params` (its numbers) and
+  lockout errors include `details.minutes`, so the frontend can show them in
+  Spanish as well as English.
 - **Transactions:** each request is all-or-nothing. If any step fails, nothing
   it wrote is kept.
 - **At risk:** a project is flagged if it's past its end date, has an overdue
@@ -169,6 +180,7 @@ All paths are under `/api/v1`. Errors always look like
 | GET | `/insights/projects?at_risk=&include_closed=` | any user (filtered by role) |
 | GET | `/insights/at-risk` | any user (filtered by role) |
 | GET | `/insights/utilization?week=` | any user (filtered by role) |
+| POST | `/admin/maintenance` | admin |
 | GET | `/audit-log?actor_id=&action=&entity_type=&entity_id=&from=&to=&limit=&offset=` | admin |
 
 ## Structure

@@ -1,5 +1,6 @@
 import { Chip } from '@mui/material';
 import PropTypes from 'prop-types';
+import { useT } from '../i18n/LanguageContext.js';
 
 const COLORS = {
   active: 'primary',
@@ -16,16 +17,23 @@ const COLORS = {
 };
 
 const LABELS = {
+  active: 'Active',
+  completed: 'Completed',
+  abandoned: 'Abandoned',
+  admin: 'Admin',
+  manager: 'Manager',
+  employee: 'Employee',
   fully_booked: 'Fully booked',
   partly_booked: 'Partly booked',
   unassigned: 'Available',
+  locked: 'Locked',
 };
 
 /** A small colored label for statuses, roles, and booking states. */
 export default function StatusChip({ value, archived = false }) {
-  if (archived) return <Chip size="small" label="Archived" variant="outlined" />;
-  const label = LABELS[value] || (value ? value[0].toUpperCase() + value.slice(1) : '—');
-  return <Chip size="small" label={label} color={COLORS[value] || 'default'} />;
+  const t = useT();
+  if (archived) return <Chip size="small" label={t('Archived')} variant="outlined" />;
+  return <Chip size="small" label={t(LABELS[value] || value || '—')} color={COLORS[value] || 'default'} />;
 }
 
 StatusChip.propTypes = {

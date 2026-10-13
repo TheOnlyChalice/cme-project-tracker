@@ -9,10 +9,14 @@ import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
+import { useT } from '../i18n/LanguageContext.js';
 import { formatDateTime, fullName } from '../utils/format.js';
 
-const ACTIONS = ['create', 'update', 'archive', 'restore', 'assign_role', 'assign_team', 'complete', 'abandon'];
-const TYPES = ['user', 'project', 'milestone', 'hour_assignment'];
+const ACTIONS = {
+  create: 'Created', update: 'Updated', archive: 'Archived', restore: 'Restored',
+  assign_role: 'Role changed', assign_team: 'Manager changed', complete: 'Completed', abandon: 'Abandoned',
+};
+const TYPES = { user: 'Person', project: 'Project', milestone: 'Milestone', hour_assignment: 'Hours' };
 
 function show(value) {
   if (value === null || value === undefined || value === '') return '∅';
@@ -29,6 +33,7 @@ function show(value) {
 //      is how admins answer "who changed this, and when?".
 /** Admin-only, read-only history of every change. */
 export default function AuditLogPage() {
+  const t = useT();
   const isMobile = useIsMobile();
   const [filters, setFilters] = useState({ actor_id: '', action: '', entity_type: '', from: '', to: '' });
   const [page, setPage] = useState(0);
@@ -47,22 +52,22 @@ export default function AuditLogPage() {
 
   return (
     <>
-      <PageHeader title="Audit log" subtitle="Every change, who made it, and when. Entries can't be edited or deleted." />
+      <PageHeader title={t('Audit log')} subtitle={t("Every change, who made it, and when. Entries can't be edited or deleted.")} />
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(5, 1fr)' }, mb: 2 }}>
-        <TextField select label="Person" value={filters.actor_id} onChange={setFilter('actor_id')}>
-          <MenuItem value="">Anyone</MenuItem>
+        <TextField select label={t('Person')} value={filters.actor_id} onChange={setFilter('actor_id')}>
+          <MenuItem value="">{t('Anyone')}</MenuItem>
           {(users.data || []).map((u) => <MenuItem key={u.id} value={u.id}>{fullName(u)}</MenuItem>)}
         </TextField>
-        <TextField select label="Action" value={filters.action} onChange={setFilter('action')}>
-          <MenuItem value="">Any action</MenuItem>
-          {ACTIONS.map((a) => <MenuItem key={a} value={a}>{a.replace('_', ' ')}</MenuItem>)}
+        <TextField select label={t('Action')} value={filters.action} onChange={setFilter('action')}>
+          <MenuItem value="">{t('Any action')}</MenuItem>
+          {Object.entries(ACTIONS).map(([value, label]) => <MenuItem key={value} value={value}>{t(label)}</MenuItem>)}
         </TextField>
-        <TextField select label="Item type" value={filters.entity_type} onChange={setFilter('entity_type')}>
-          <MenuItem value="">Any type</MenuItem>
-          {TYPES.map((t) => <MenuItem key={t} value={t}>{t.replace('_', ' ')}</MenuItem>)}
+        <TextField select label={t('Item type')} value={filters.entity_type} onChange={setFilter('entity_type')}>
+          <MenuItem value="">{t('Any type')}</MenuItem>
+          {Object.entries(TYPES).map(([value, label]) => <MenuItem key={value} value={value}>{t(label)}</MenuItem>)}
         </TextField>
-        <TextField label="From" type="date" value={filters.from} onChange={setFilter('from')} slotProps={{ inputLabel: { shrink: true } }} />
-        <TextField label="To" type="date" value={filters.to} onChange={setFilter('to')} slotProps={{ inputLabel: { shrink: true } }} />
+        <TextField label={t('From')} type="date" value={filters.from} onChange={setFilter('from')} slotProps={{ inputLabel: { shrink: true } }} />
+        <TextField label={t('To')} type="date" value={filters.to} onChange={setFilter('to')} slotProps={{ inputLabel: { shrink: true } }} />
       </Box>
 
       <ErrorAlert error={error} onRetry={reload} />
@@ -70,28 +75,28 @@ export default function AuditLogPage() {
       {data && (
         <Paper variant="outlined">
           <TableContainer>
-            <Table size="small" aria-label="Audit log">
+            <Table size="small" aria-label={t('Audit log')}>
               <TableHead>
                 <TableRow>
-                  <TableCell>When</TableCell>
-                  <TableCell>Who</TableCell>
-                  <TableCell>Action</TableCell>
-                  {!isMobile && <TableCell>Item</TableCell>}
-                  <TableCell>Changes</TableCell>
+                  <TableCell>{t('When')}</TableCell>
+                  <TableCell>{t('Who')}</TableCell>
+                  <TableCell>{t('Action')}</TableCell>
+                  {!isMobile && <TableCell>{t('Item')}</TableCell>}
+                  <TableCell>{t('Changes')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {data.entries.length === 0 && (
-                  <TableRow><TableCell colSpan={5}><Typography color="text.secondary">No entries match.</Typography></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5}><Typography color="text.secondary">{t('No entries match.')}</Typography></TableCell></TableRow>
                 )}
                 {data.entries.map((entry) => (
                   <TableRow key={entry.id} sx={{ verticalAlign: 'top' }}>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(entry.created_at)}</TableCell>
-                    <TableCell>{entry.actor_id ? names[entry.actor_id] || 'Unknown' : 'System'}</TableCell>
-                    <TableCell><Chip size="small" label={entry.action.replace('_', ' ')} /></TableCell>
+                    <TableCell>{entry.actor_id ? names[entry.actor_id] || t('Unknown') : t('System')}</TableCell>
+                    <TableCell><Chip size="small" label={t(ACTIONS[entry.action] || entry.action)} /></TableCell>
                     {!isMobile && (
                       <TableCell>
-                        {entry.entity_type.replace('_', ' ')}
+                        {t(TYPES[entry.entity_type] || entry.entity_type)}
                         {entry.entity_type === 'user' && names[entry.entity_id] && <><br /><Typography variant="caption">{names[entry.entity_id]}</Typography></>}
                       </TableCell>
                     )}
@@ -103,7 +108,7 @@ export default function AuditLogPage() {
                           </Typography>
                         ))}
                         {Object.keys(entry.changes).length > 8 && (
-                          <Typography variant="caption" color="text.secondary">+{Object.keys(entry.changes).length - 8} more fields</Typography>
+                          <Typography variant="caption" color="text.secondary">{t('+{count} more fields', { count: Object.keys(entry.changes).length - 8 })}</Typography>
                         )}
                       </Stack>
                     </TableCell>
@@ -120,6 +125,8 @@ export default function AuditLogPage() {
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={(event) => { setRowsPerPage(Number(event.target.value)); setPage(0); }}
             rowsPerPageOptions={[25, 50, 100]}
+            labelRowsPerPage={t('Rows per page:')}
+            labelDisplayedRows={({ from, to, count }) => t('{from}–{to} of {count}', { from, to, count })}
           />
         </Paper>
       )}

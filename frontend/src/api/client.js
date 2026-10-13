@@ -18,6 +18,29 @@ export class ApiError extends Error {
 
 let onSessionEnded = () => {};
 
+// [REQUEST ACTIVITY TRACKER HERE]
+// How: Counts requests that are still waiting for an answer and tells any
+//      listener when the count changes.
+// Why: Powers the progress bar at the top of the screen, so there is always
+//      a visible sign that something is processing, on every page and for
+//      every action, without each page having to remember to show one.
+let pending = 0;
+const listeners = new Set();
+
+function setPending(change) {
+  pending += change;
+  listeners.forEach((listener) => listener());
+}
+
+/** Subscribe to changes in the number of in-flight requests. */
+export function subscribeToActivity(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** How many requests are currently in flight. */
+export const pendingRequests = () => pending;
+
 /** Lets the auth provider know when the session can no longer be renewed. */
 export function setSessionEndedHandler(handler) {
   onSessionEnded = handler;
@@ -99,6 +122,7 @@ export async function api(path, { method = 'GET', body, query, auth = true } = {
   if (auth && session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
   let response;
+  setPending(1);
   try {
     response = await fetch(url, {
       method,
@@ -107,6 +131,8 @@ export async function api(path, { method = 'GET', body, query, auth = true } = {
     });
   } catch {
     throw new ApiError(0, 'network_error', 'Could not reach the server. Check your connection.');
+  } finally {
+    setPending(-1);
   }
 
   try {
@@ -117,14 +143,14 @@ export async function api(path, { method = 'GET', body, query, auth = true } = {
         await refreshTokens();
       } catch {
         clearSession();
-        onSessionEnded('Your session has ended. Please sign in again.');
+        onSessionEnded(error);
         throw error;
       }
       return api(path, { method, body, query, auth }, true);
     }
     if (auth && error.status === 401 && ['token_revoked', 'invalid_user', 'invalid_token'].includes(error.code)) {
       clearSession();
-      onSessionEnded(error.message);
+      onSessionEnded(error);
     }
     // [COLD START RETRY HERE]
     // How: A 503 "storage_unavailable" is retried once after a short pause.

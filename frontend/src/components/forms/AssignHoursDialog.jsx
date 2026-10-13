@@ -1,24 +1,28 @@
 import { Alert, MenuItem, TextField } from '@mui/material';
-import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
 import { api } from '../../api/client.js';
 import useSubmit from '../../hooks/useSubmit.js';
+import { useT } from '../../i18n/LanguageContext.js';
 import { fieldError, formatHours, fullName, mondayOf } from '../../utils/format.js';
 import FormDialog from './FormDialog.jsx';
 
 // [ASSIGN HOURS FORM HERE]
-// How: The manager picks an employee, a project and one of its active
-//      milestones, a week, and the hours. While they choose, the form shows
-//      how many of that person's 40 hours are still free that week. Editing
-//      an existing assignment only changes the hours.
-// Why: Seeing the free hours up front avoids guesswork; the backend still
-//      enforces the 40-hour and project limits and explains any refusal.
+// How: The manager picks a project first, then one of its active milestones,
+//      then an employee from that project manager's team, a week, and the
+//      hours. While they choose, the form shows how many of that person's 40
+//      hours are still free that week. Editing only changes the hours.
+// Why: Picking the project first means only people who can actually work on
+//      it are offered (found in the role-overlap review: admins were offered
+//      everyone, and the save then failed). The backend still enforces the
+//      40-hour and project limits and explains any refusal.
 /** Assign or change an employee's hours on a milestone. */
 export default function AssignHoursDialog({ open, employees, projects, assignment, defaultProjectId, defaultWeek, onClose, onSaved }) {
+  const t = useT();
   const editing = Boolean(assignment);
   const [form, setForm] = useState({
     user_id: assignment?.user_id || '',
-    project_id: assignment?.project_id || defaultProjectId || '',
+    project_id: assignment?.project_id || defaultProjectId || (projects.length === 1 ? projects[0].id : ''),
     milestone_id: assignment?.milestone_id || '',
     week_start: assignment?.week_start || defaultWeek || mondayOf(),
     hours: assignment ? String(assignment.hours) : '',
@@ -26,6 +30,9 @@ export default function AssignHoursDialog({ open, employees, projects, assignmen
   const [milestones, setMilestones] = useState([]);
   const [availability, setAvailability] = useState(null);
   const { busy, error, run } = useSubmit();
+
+  const project = projects.find((p) => p.id === form.project_id);
+  const eligible = editing ? employees : employees.filter((e) => project && e.manager_id === project.manager_id);
 
   useEffect(() => {
     if (!form.project_id || editing) return undefined;
@@ -51,7 +58,10 @@ export default function AssignHoursDialog({ open, employees, projects, assignmen
 
   const set = (field) => (event) => {
     const next = { ...form, [field]: event.target.value };
-    if (field === 'project_id') next.milestone_id = '';
+    if (field === 'project_id') {
+      next.milestone_id = '';
+      next.user_id = '';
+    }
     setForm(next);
   };
 
@@ -74,34 +84,38 @@ export default function AssignHoursDialog({ open, employees, projects, assignmen
   };
 
   const free = availability ? Number(availability.available) + (editing ? Number(assignment.hours) : 0) : null;
-  const err = (field) => fieldError(error, field);
+  const person = employees.find((p) => p.id === form.user_id);
+  const err = (field) => t(fieldError(error, field));
   return (
-    <FormDialog open={open} title={editing ? 'Change hours' : 'Assign hours'} onClose={onClose}
+    <FormDialog open={open} title={editing ? t('Change hours') : t('Assign hours')} onClose={onClose}
       onSubmit={submit} busy={busy} error={error} submitLabel={editing ? 'Save' : 'Assign'}>
-      <TextField select label="Employee" value={form.user_id} onChange={set('user_id')} required disabled={editing}
-        error={!!err('user_id')} helperText={err('user_id')}>
-        {employees.map((person) => <MenuItem key={person.id} value={person.id}>{fullName(person)}</MenuItem>)}
-      </TextField>
       {!editing && (
         <>
-          <TextField select label="Project" value={form.project_id} onChange={set('project_id')} required>
-            {projects.map((project) => <MenuItem key={project.id} value={project.id}>{project.name}</MenuItem>)}
+          <TextField select label={t('Project')} value={form.project_id} onChange={set('project_id')} required>
+            {projects.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
           </TextField>
-          <TextField select label="Milestone" value={form.milestone_id} onChange={set('milestone_id')} required
+          <TextField select label={t('Milestone')} value={form.milestone_id} onChange={set('milestone_id')} required
             disabled={!form.project_id} error={!!err('milestone_id')}
-            helperText={err('milestone_id') || (form.project_id && !milestones.length ? 'This project has no active milestones.' : '')}>
+            helperText={err('milestone_id') || (form.project_id && !milestones.length ? t('This project has no active milestones.') : '')}>
             {milestones.map((m) => <MenuItem key={m.id} value={m.id}>{m.sequence}. {m.name}</MenuItem>)}
           </TextField>
-          <TextField label="Week (any day in the week)" type="date" value={form.week_start} onChange={set('week_start')} required
-            slotProps={{ inputLabel: { shrink: true } }} error={!!err('week_start')} helperText={err('week_start')} />
         </>
       )}
-      {free !== null && (
+      <TextField select label={t('Employee')} value={form.user_id} onChange={set('user_id')} required
+        disabled={editing || !form.project_id} error={!!err('user_id')}
+        helperText={err('user_id') || (!editing && project && !eligible.length ? t("This project manager's team has no employees.") : '')}>
+        {eligible.map((p) => <MenuItem key={p.id} value={p.id}>{fullName(p)}</MenuItem>)}
+      </TextField>
+      {!editing && (
+        <TextField label={t('Week (any day in the week)')} type="date" value={form.week_start} onChange={set('week_start')} required
+          slotProps={{ inputLabel: { shrink: true } }} error={!!err('week_start')} helperText={err('week_start')} />
+      )}
+      {free !== null && person && (
         <Alert severity={free > 0 ? 'info' : 'warning'}>
-          {fullName(employees.find((p) => p.id === form.user_id))} has {formatHours(free)} of 40 h free that week.
+          {t('{name} has {hours} of 40 h free that week.', { name: fullName(person), hours: formatHours(free) })}
         </Alert>
       )}
-      <TextField label="Hours" type="number" value={form.hours} onChange={set('hours')} required
+      <TextField label={t('Hours')} type="number" value={form.hours} onChange={set('hours')} required
         slotProps={{ htmlInput: { min: 0.5, max: 40, step: 0.5 } }} error={!!err('hours')} helperText={err('hours')} />
     </FormDialog>
   );

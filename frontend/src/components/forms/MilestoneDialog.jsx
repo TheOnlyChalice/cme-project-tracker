@@ -3,7 +3,8 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { api } from '../../api/client.js';
 import useSubmit from '../../hooks/useSubmit.js';
-import { fieldError } from '../../utils/format.js';
+import { useT } from '../../i18n/LanguageContext.js';
+import { fieldError, formatDate } from '../../utils/format.js';
 import FormDialog from './FormDialog.jsx';
 
 function toForm(milestone) {
@@ -23,6 +24,7 @@ function toForm(milestone) {
 //      backend checks the dates fit inside the project before saving.
 /** Create or edit a milestone. */
 export default function MilestoneDialog({ open, project, milestone, onClose, onSaved }) {
+  const t = useT();
   const [form, setForm] = useState(() => toForm(milestone));
   const { busy, error, run } = useSubmit();
   const editing = Boolean(milestone);
@@ -55,19 +57,19 @@ export default function MilestoneDialog({ open, project, milestone, onClose, onS
     if (ok) onClose();
   };
 
-  const err = (field) => fieldError(error, field);
+  const err = (field) => t(fieldError(error, field));
   return (
-    <FormDialog open={open} title={editing ? 'Edit milestone' : 'New milestone'} onClose={onClose}
+    <FormDialog open={open} title={editing ? t('Edit milestone') : t('New milestone')} onClose={onClose}
       onSubmit={submit} busy={busy} error={error} submitLabel={editing ? 'Save changes' : 'Add milestone'}>
-      <TextField label="Name" value={form.name} onChange={set('name')} required error={!!err('name')} helperText={err('name')} />
-      <TextField label="Goal" value={form.goal} onChange={set('goal')} multiline minRows={2}
-        placeholder="e.g. Decommission 200 servers" error={!!err('goal')} helperText={err('goal')} />
-      <TextField label="Deliverables (one per line)" value={form.deliverables} onChange={set('deliverables')}
+      <TextField label={t('Name')} value={form.name} onChange={set('name')} required error={!!err('name')} helperText={err('name')} />
+      <TextField label={t('Goal')} value={form.goal} onChange={set('goal')} multiline minRows={2}
+        placeholder={t('e.g. Decommission 200 servers')} error={!!err('goal')} helperText={err('goal')} />
+      <TextField label={t('Deliverables (one per line)')} value={form.deliverables} onChange={set('deliverables')}
         multiline minRows={3} error={!!err('deliverables')} helperText={err('deliverables')} />
-      <TextField label="Start date" type="date" value={form.start_date} onChange={set('start_date')} required
+      <TextField label={t('Start date')} type="date" value={form.start_date} onChange={set('start_date')} required
         slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: project.start_date, max: project.end_date } }}
-        error={!!err('start_date')} helperText={err('start_date') || `Project runs ${project.start_date} to ${project.end_date}`} />
-      <TextField label="End date" type="date" value={form.end_date} onChange={set('end_date')} required
+        error={!!err('start_date')} helperText={err('start_date') || t('Project runs {start} to {end}', { start: formatDate(project.start_date), end: formatDate(project.end_date) })} />
+      <TextField label={t('End date')} type="date" value={form.end_date} onChange={set('end_date')} required
         slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: project.start_date, max: project.end_date } }}
         error={!!err('end_date')} helperText={err('end_date')} />
     </FormDialog>

@@ -10,6 +10,8 @@ from typing import Any
 from app import clock
 from app.permissions import EMPLOYEE, MANAGER, can_view_project, is_admin
 from app.services.hours import CAPACITY, week_param
+from app.services.maintenance import (INACTIVITY_ARCHIVE_DAYS, INACTIVITY_WARNING_DAYS,
+                                      days_inactive, last_activity)
 from app.services.milestones import milestone_chain
 from app.store import store
 
@@ -121,27 +123,45 @@ def project_health(project: Record, viewer: Record, today: date) -> Record:
     is_open = project["status"] == "active" and not project.get("is_archived")
     if is_open:
         if days_left < 0:
-            flags.append({"code": "past_end_date",
+            flags.append({"code": "past_end_date", "params": {"days": -days_left},
                           "message": f"The project ended {-days_left} days ago but is still active."})
         if overdue:
-            flags.append({"code": "overdue_milestone",
-                          "message": "Overdue milestones: " + ", ".join(m["name"] for m in overdue) + "."})
+            names = ", ".join(m["name"] for m in overdue)
+            flags.append({"code": "overdue_milestone", "params": {"names": names},
+                          "message": f"Overdue milestones: {names}."})
         if 0 <= days_left <= DEADLINE_WARNING_DAYS and completed < total:
-            flags.append({"code": "deadline_near",
+            flags.append({"code": "deadline_near", "params": {"days": days_left, "open": total - completed},
                           "message": f"{days_left} days left with {total - completed} milestones open."})
         if total and elapsed_pct - completion_pct > SCHEDULE_GAP_POINTS:
             flags.append({"code": "behind_schedule",
+                          "params": {"elapsed": round(elapsed_pct), "complete": round(completion_pct)},
                           "message": f"{elapsed_pct:.0f}% of the time has passed but only "
                                      f"{completion_pct:.0f}% of milestones are complete."})
         if not total and today > start:
-            flags.append({"code": "no_milestones",
+            flags.append({"code": "no_milestones", "params": {},
                           "message": "The project has started but has no milestones."})
         if budget is not None and cost_committed > Decimal(budget):
-            flags.append({"code": "over_budget",
-                          "message": f"Committed labor cost {cost_committed} exceeds the budget {budget}."})
+            # [NO BUDGET LEAK IN FLAGS HERE]
+            # How: Employees get the over-budget warning without any amounts.
+            # Why: Employees aren't shown budgets or costs anywhere else, so a
+            #      risk message must not reveal them either.
+            if viewer.get("role") == EMPLOYEE:
+                flags.append({"code": "over_budget", "params": {},
+                              "message": "Forecast labor cost exceeds the budget."})
+            else:
+                flags.append({"code": "over_budget",
+                              "params": {"cost": float(cost_committed), "budget": float(Decimal(budget))},
+                              "message": f"Committed labor cost {cost_committed} exceeds the budget {budget}."})
         if hours_pct is not None and hours_pct >= BUDGET_WARNING_PERCENT:
-            flags.append({"code": "hours_nearly_used",
+            flags.append({"code": "hours_nearly_used", "params": {"percent": float(hours_pct)},
                           "message": f"{hours_pct}% of allocated hours are assigned."})
+
+        idle = days_inactive(project, today)
+        if idle is not None and idle >= INACTIVITY_WARNING_DAYS:
+            remaining = max(INACTIVITY_ARCHIVE_DAYS - idle, 0)
+            flags.append({"code": "inactive", "params": {"days": idle, "archive_in": remaining},
+                          "message": f"No activity for {idle} days; it will be archived automatically "
+                                     f"in {remaining} days."})
 
     summary: Record = {
         "project_id": project["id"],
@@ -159,6 +179,7 @@ def project_health(project: Record, viewer: Record, today: date) -> Record:
         "allocated_hours": project["allocated_hours"],
         "hours_assigned": hours,
         "percent_hours_assigned": hours_pct,
+        "last_activity_at": last_activity(project),
         "at_risk": bool(flags),
         "risk_flags": flags,
     }

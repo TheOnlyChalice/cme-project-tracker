@@ -4,6 +4,19 @@ React 19 + Vite app using **Material UI** components and **React Responsive**
 for layout changes on small screens. It talks to the Python API in
 `backend/v1` using JWT sign-in.
 
+## Features
+
+- **Light and dark mode:** follows the computer's setting until you pick one
+  with the sun/moon button (top bar and login page); the choice is remembered.
+- **English and Spanish:** the EN | ES switch translates every screen,
+  including backend error messages and risk flags, plus date and money formats.
+  Translations live in `src/i18n/es.js`.
+- **Loading feedback:** a progress bar runs across the top of the screen
+  whenever any request is in flight, and buttons show a spinner while their
+  action runs (and can't be double-clicked).
+- **Role-based screens:** menus, pages, and buttons only appear for roles that
+  can use them; the backend enforces the same rules on every request.
+
 ## Run locally (Git Bash on Windows)
 
 You need Node.js 20.19 or newer (`node --version`) and the backend running.
@@ -50,7 +63,8 @@ uploads the site to S3. The site and API share that address.
 | --- | --- |
 | `src/main.jsx` | Theme, router, error boundary, providers |
 | `src/App.jsx` | Every page and the role it needs |
-| `src/theme.js` | Material UI theme (colors, fonts, defaults) |
+| `src/theme/` | Material UI theme for light and dark mode |
+| `src/i18n/` | Language switch, translation lookup, Spanish dictionary |
 | `src/api/` | API client (tokens, refresh, errors) and session storage |
 | `src/auth/` | Sign-in state and route guard |
 | `src/components/` | Shared pieces: layout, dialogs, chips, cards |

@@ -14,7 +14,9 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.js';
 import useIsMobile from '../hooks/useIsMobile.js';
+import { useT } from '../i18n/LanguageContext.js';
 import { hasRole } from '../utils/roles.js';
+import AppearanceControls from './AppearanceControls.jsx';
 import StatusChip from './StatusChip.jsx';
 
 const DRAWER_WIDTH = 240;
@@ -41,14 +43,17 @@ const NAV_ITEMS = [
 /** The signed-in app frame: top bar, navigation menu, and page area. */
 export default function Layout() {
   const { user, logout } = useAuth();
+  const t = useT();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const items = NAV_ITEMS.filter((item) => hasRole(user, item.role));
   const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`;
 
   const signOut = async () => {
+    setSigningOut(true);
     await logout();
     navigate('/login');
   };
@@ -59,7 +64,7 @@ export default function Layout() {
         <Typography variant="h6" noWrap>ACME Tracker</Typography>
       </Toolbar>
       <Divider />
-      <List component="nav" aria-label="Main navigation" sx={{ flexGrow: 1 }}>
+      <List component="nav" aria-label={t('Main navigation')} sx={{ flexGrow: 1 }}>
         {items.map((item) => (
           <ListItemButton
             key={item.to}
@@ -70,7 +75,7 @@ export default function Layout() {
             sx={{ mx: 1, borderRadius: 2, '&.active': { bgcolor: 'action.selected' } }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.label} />
+            <ListItemText primary={t(item.label)} />
           </ListItemButton>
         ))}
       </List>
@@ -78,11 +83,11 @@ export default function Layout() {
       <List>
         <ListItemButton component={NavLink} to="/profile" onClick={() => setOpen(false)} sx={{ mx: 1, borderRadius: 2 }}>
           <ListItemIcon><AccountCircleIcon /></ListItemIcon>
-          <ListItemText primary="My profile" />
+          <ListItemText primary={t('My profile')} />
         </ListItemButton>
-        <ListItemButton onClick={signOut} sx={{ mx: 1, borderRadius: 2 }}>
+        <ListItemButton onClick={signOut} disabled={signingOut} sx={{ mx: 1, borderRadius: 2 }}>
           <ListItemIcon><LogoutIcon /></ListItemIcon>
-          <ListItemText primary="Sign out" />
+          <ListItemText primary={signingOut ? t('Signing out…') : t('Sign out')} />
         </ListItemButton>
       </List>
     </Box>
@@ -90,21 +95,22 @@ export default function Layout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100%' }}>
-      <AppBar position="fixed" color="inherit" sx={{ borderBottom: 1, borderColor: 'divider', zIndex: (t) => t.zIndex.drawer + 1 }}>
-        <Toolbar>
+      <AppBar position="fixed" color="inherit" sx={{ borderBottom: 1, borderColor: 'divider', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <Toolbar sx={{ gap: 1 }}>
           {isMobile && (
-            <IconButton edge="start" aria-label="Open menu" onClick={() => setOpen(true)} sx={{ mr: 1 }}>
+            <IconButton edge="start" aria-label={t('Open menu')} onClick={() => setOpen(true)}>
               <MenuIcon />
             </IconButton>
           )}
           <Typography variant="h6" sx={{ flexGrow: 1 }} noWrap>
-            {isMobile ? 'ACME Tracker' : 'ACME Project Tracker'}
+            {isMobile ? 'ACME' : 'ACME Project Tracker'}
           </Typography>
+          <AppearanceControls />
           {!isMobile && <StatusChip value={user.role} />}
           <Tooltip title={`${user.first_name} ${user.last_name} (${user.username})`}>
             <Avatar
               src={user.profile_picture_url || undefined}
-              sx={{ ml: 2, width: 34, height: 34, bgcolor: 'primary.main', cursor: 'pointer' }}
+              sx={{ ml: 1, width: 34, height: 34, bgcolor: 'primary.main', cursor: 'pointer' }}
               onClick={() => navigate('/profile')}
             >
               {initials}

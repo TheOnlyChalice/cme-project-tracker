@@ -13,6 +13,8 @@ import RiskFlags from '../components/RiskFlags.jsx';
 import StatCard from '../components/StatCard.jsx';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
+import { useLanguage } from '../i18n/LanguageContext.js';
+import { flagText } from '../i18n/translate.js';
 import { formatDate, formatHours, formatMoney } from '../utils/format.js';
 import { isManager } from '../utils/roles.js';
 
@@ -27,6 +29,7 @@ import { isManager } from '../utils/roles.js';
 /** Home page with project health, risks, and hours at a glance. */
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { lang, t } = useLanguage();
   const manager = isManager(user);
   const isMobile = useIsMobile();
 
@@ -49,24 +52,33 @@ export default function DashboardPage() {
     const team = people.employees;
     const free = team.reduce((sum, row) => sum + Number(row.available), 0);
     const full = team.filter((row) => row.state === 'fully_booked').length;
-    peopleStat = <StatCard label="Team hours free this week" value={formatHours(free)} caption={`${full} of ${team.length} people fully booked`} />;
+    peopleStat = (
+      <StatCard label={t('Team hours free this week')} value={formatHours(free)}
+        caption={t('{full} of {total} people fully booked', { full, total: team.length })} />
+    );
   } else {
-    peopleStat = <StatCard label="Your hours this week" value={`${formatHours(people.assigned)} / 40`} caption={`${formatHours(people.available)} not yet assigned`} />;
+    peopleStat = (
+      <StatCard label={t('Your hours this week')} value={`${formatHours(people.assigned)} / 40`}
+        caption={t('{hours} not yet assigned', { hours: formatHours(people.available) })} />
+    );
   }
+
+  const daysLeft = (p) => t('{days} days left', { days: p.days_left });
 
   return (
     <>
-      <PageHeader title={`Welcome, ${user.first_name}`} subtitle="Here's how your projects are doing." />
+      <PageHeader title={t('Welcome, {name}', { name: user.first_name })} subtitle={t("Here's how your projects are doing.")} />
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, mb: 3 }}>
-        <StatCard label="Active projects" value={projects.length} />
-        <StatCard label="At risk" value={atRisk.length} color={atRisk.length ? 'warning.main' : 'success.main'} caption={atRisk.length ? 'Need attention' : 'All on track'} />
+        <StatCard label={t('Active projects')} value={projects.length} />
+        <StatCard label={t('At risk')} value={atRisk.length} color={atRisk.length ? 'warning.main' : 'success.main'}
+          caption={atRisk.length ? t('Need attention') : t('All on track')} />
         {peopleStat}
       </Box>
 
       {atRisk.length > 0 && (
         <>
-          <Typography variant="h6" component="h2" sx={{ mb: 1 }}>Needs attention</Typography>
+          <Typography variant="h6" component="h2" sx={{ mb: 1 }}>{t('Needs attention')}</Typography>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, mb: 3 }}>
             {atRisk.map((project) => (
               <Card key={project.project_id} sx={{ borderColor: 'warning.main' }}>
@@ -74,11 +86,11 @@ export default function DashboardPage() {
                   <CardContent>
                     <Typography variant="subtitle1" fontWeight={600}>{project.name}</Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Ends {formatDate(project.end_date)} · {project.days_left} days left
+                      {t('Ends {date}', { date: formatDate(project.end_date) })} · {daysLeft(project)}
                     </Typography>
                     <Stack spacing={0.5}>
                       {project.risk_flags.map((flag) => (
-                        <Typography key={flag.code} variant="body2">• {flag.message}</Typography>
+                        <Typography key={flag.code} variant="body2">• {flagText(flag, lang)}</Typography>
                       ))}
                     </Stack>
                   </CardContent>
@@ -89,8 +101,8 @@ export default function DashboardPage() {
         </>
       )}
 
-      <Typography variant="h6" component="h2" sx={{ mb: 1 }}>Project health</Typography>
-      {projects.length === 0 && <Typography color="text.secondary">No active projects to show.</Typography>}
+      <Typography variant="h6" component="h2" sx={{ mb: 1 }}>{t('Project health')}</Typography>
+      {projects.length === 0 && <Typography color="text.secondary">{t('No active projects to show.')}</Typography>}
 
       {isMobile ? (
         <Stack spacing={2}>
@@ -99,10 +111,12 @@ export default function DashboardPage() {
               <CardActionArea component={RouterLink} to={`/projects/${p.project_id}`}>
                 <CardContent>
                   <Typography fontWeight={600}>{p.name}</Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>{p.days_left} days left</Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>{daysLeft(p)}</Typography>
                   <Stack spacing={1}>
-                    <ProgressCell value={p.percent_complete} label={`Milestones ${p.milestones_completed}/${p.milestones_total}`} />
-                    <ProgressCell value={p.percent_hours_assigned} label={`Hours ${formatHours(p.hours_assigned)} of ${p.allocated_hours}`} />
+                    <ProgressCell value={p.percent_complete}
+                      label={t('Milestones {done}/{total}', { done: p.milestones_completed, total: p.milestones_total })} />
+                    <ProgressCell value={p.percent_hours_assigned}
+                      label={t('Hours {used} of {total}', { used: formatHours(p.hours_assigned), total: p.allocated_hours })} />
                     <RiskFlags flags={p.risk_flags} />
                   </Stack>
                 </CardContent>
@@ -113,15 +127,15 @@ export default function DashboardPage() {
       ) : (
         projects.length > 0 && (
           <TableContainer component={Paper} variant="outlined">
-            <Table size="small" aria-label="Project health">
+            <Table size="small" aria-label={t('Project health')}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Project</TableCell>
-                  <TableCell>Ends</TableCell>
-                  <TableCell>Milestones</TableCell>
-                  <TableCell>Hours assigned</TableCell>
-                  {manager && <TableCell>Budget used</TableCell>}
-                  <TableCell>Risk</TableCell>
+                  <TableCell>{t('Project')}</TableCell>
+                  <TableCell>{t('Ends')}</TableCell>
+                  <TableCell>{t('Milestones')}</TableCell>
+                  <TableCell>{t('Hours assigned')}</TableCell>
+                  {manager && <TableCell>{t('Budget used')}</TableCell>}
+                  <TableCell>{t('Risk')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -132,12 +146,19 @@ export default function DashboardPage() {
                         {p.name}
                       </Typography>
                     </TableCell>
-                    <TableCell>{formatDate(p.end_date)}<br /><Typography variant="caption" color="text.secondary">{p.days_left} days left</Typography></TableCell>
-                    <TableCell><ProgressCell value={p.percent_complete} label={`${p.milestones_completed} of ${p.milestones_total}`} /></TableCell>
-                    <TableCell><ProgressCell value={p.percent_hours_assigned} label={`${formatHours(p.hours_assigned)} of ${p.allocated_hours}`} /></TableCell>
+                    <TableCell>{formatDate(p.end_date)}<br /><Typography variant="caption" color="text.secondary">{daysLeft(p)}</Typography></TableCell>
+                    <TableCell>
+                      <ProgressCell value={p.percent_complete}
+                        label={t('{done} of {total}', { done: p.milestones_completed, total: p.milestones_total })} />
+                    </TableCell>
+                    <TableCell>
+                      <ProgressCell value={p.percent_hours_assigned}
+                        label={t('{used} of {total} h', { used: formatHours(p.hours_assigned), total: p.allocated_hours })} />
+                    </TableCell>
                     {manager && (
                       <TableCell>
-                        <ProgressCell value={p.percent_budget_used} label={p.budget ? `${formatMoney(p.labor_cost_to_date)} of ${formatMoney(p.budget)}` : 'No budget'} />
+                        <ProgressCell value={p.percent_budget_used}
+                          label={p.budget ? t('{used} of {total}', { used: formatMoney(p.labor_cost_to_date), total: formatMoney(p.budget) }) : t('No budget')} />
                       </TableCell>
                     )}
                     <TableCell><RiskFlags flags={p.risk_flags} /></TableCell>

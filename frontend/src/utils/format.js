@@ -1,23 +1,30 @@
 // Shared display helpers so dates, money, and hours look the same everywhere.
 
+let locale = 'en-US';
+
+/** Set the language used for dates and numbers (called by LanguageProvider). */
+export function setFormatLocale(next) {
+  locale = next;
+}
+
 export function formatDate(value) {
   if (!value) return '—';
   const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+  return new Date(year, month - 1, day).toLocaleDateString(locale, {
     month: 'short', day: 'numeric', year: 'numeric',
   });
 }
 
 export function formatDateTime(value) {
   if (!value) return '—';
-  return new Date(value).toLocaleString(undefined, {
+  return new Date(value).toLocaleString(locale, {
     month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
   });
 }
 
 export function formatMoney(value) {
   if (value === null || value === undefined) return '—';
-  return Number(value).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  return Number(value).toLocaleString(locale, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
 export function formatHours(value) {

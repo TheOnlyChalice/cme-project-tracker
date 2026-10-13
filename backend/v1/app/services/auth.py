@@ -61,7 +61,8 @@ def _find_user(identifier: str) -> Record | None:
     return matches[0] if matches else None
 
 
-def _failure(code: str, message: str, status: int = 401) -> tuple[int, Record]:
+def _failure(code: str, message: str, status: int = 401,
+             details: Record | None = None) -> tuple[int, Record]:
     """
     Build a login failure response body.
 
@@ -69,11 +70,15 @@ def _failure(code: str, message: str, status: int = 401) -> tuple[int, Record]:
         code: Error code.
         message: Human-readable message.
         status: HTTP status.
+        details: Extra values (e.g. minutes left) so the frontend can translate.
 
     Returns:
         (status, body).
     """
-    return status, {"error": {"code": code, "message": message}}
+    error: Record = {"code": code, "message": message}
+    if details:
+        error["details"] = details
+    return status, {"error": error}
 
 
 # [LOGIN HERE]
@@ -115,7 +120,8 @@ def login(data: Any) -> tuple[int, Record]:
     if locked_until and datetime.fromisoformat(locked_until) > now:
         minutes = max(1, int((datetime.fromisoformat(locked_until) - now).total_seconds() // 60) + 1)
         return _failure("account_locked",
-                        f"Too many failed attempts. Try again in about {minutes} minutes.", 429)
+                        f"Too many failed attempts. Try again in about {minutes} minutes.", 429,
+                        {"minutes": minutes})
 
     if not verify_password(password, user["password_hash"]):
         failures = (user.get("failed_login_count") or 0) + 1
@@ -125,7 +131,8 @@ def login(data: Any) -> tuple[int, Record]:
                        "locked_until": (now + timedelta(minutes=LOCKOUT_MINUTES)).isoformat()}
             store.update("users", user["id"], changes)
             return _failure("account_locked",
-                            f"Too many failed attempts. Try again in {LOCKOUT_MINUTES} minutes.", 429)
+                            f"Too many failed attempts. Try again in {LOCKOUT_MINUTES} minutes.", 429,
+                            {"minutes": LOCKOUT_MINUTES})
         store.update("users", user["id"], changes)
         return _failure(*invalid)
 
