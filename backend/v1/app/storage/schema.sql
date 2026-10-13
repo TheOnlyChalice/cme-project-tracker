@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT users_employee_has_manager CHECK (role <> 'employee' OR manager_id IS NOT NULL),
     CONSTRAINT users_not_own_manager CHECK (manager_id IS NULL OR manager_id <> id)
 );
+-- Sign-in columns added with JWT. ADD COLUMN IF NOT EXISTS upgrades databases
+-- created before this branch without touching their data.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version      INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until       TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key ON users (lower(email));
 CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);
 

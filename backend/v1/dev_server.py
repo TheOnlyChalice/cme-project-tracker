@@ -58,7 +58,11 @@ from function import handler  # noqa: E402  pylint: disable=wrong-import-positio
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
+    # [CORS AUTH HEADER HERE]
+    # How: Authorization is listed by name rather than relying on "*".
+    # Why: Browsers don't let the "*" wildcard cover the Authorization header,
+    #      so without this the React app on port 3000 couldn't send its token.
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
 }
 
 

@@ -8,7 +8,7 @@ from app.responses import json_response
 from app.router import Router
 from app.store import store
 
-API_VERSION = "1.1.0"
+API_VERSION = "1.2.0"
 
 
 def register(router: Router) -> None:

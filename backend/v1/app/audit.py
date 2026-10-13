@@ -17,7 +17,7 @@ AUDIT_ACTIONS = ("create", "update", "archive", "restore",
 REDACTED_FIELDS = frozenset({"password_hash"})
 
 # Bookkeeping fields that change on every edit and add only noise to the log.
-IGNORED_FIELDS = frozenset({"updated_at"})
+IGNORED_FIELDS = frozenset({"updated_at", "token_version", "failed_login_count", "locked_until"})
 
 
 def _diff(before: Record | None, after: Record | None) -> dict[str, dict[str, Any]]:

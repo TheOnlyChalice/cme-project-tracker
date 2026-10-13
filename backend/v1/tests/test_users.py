@@ -100,7 +100,8 @@ class UserEditTests(ApiTestCase):
 
     def test_users_edit_their_own_personal_details_only(self) -> None:
         me = self.ok("PATCH", f"/users/{uid('emp001')}", "emp001",
-                     {"first_name": "Samuel", "password": "NewPass123"})
+                     {"first_name": "Samuel", "password": "NewPass123",
+                      "current_password": "ChangeMe123"})
         self.assertEqual(me["first_name"], "Samuel")
         self.error("PATCH", f"/users/{uid('emp001')}", "emp001", 400, "unknown_fields",
                    {"role": "admin"})

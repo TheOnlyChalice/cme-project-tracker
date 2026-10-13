@@ -101,7 +101,13 @@ const server = http.createServer((req, res) => {
       'accept': headers.accept || 'application/json',
       'content-type': headers['content-type'] || 'application/json',
       'user-agent': headers['user-agent'] || 'proxy-server',
-      'host': target.host
+      'host': target.host,
+      // [PROXY AUTH HEADER HERE]
+      // How: Pass the browser's Authorization header (the JWT) through to Lambda.
+      // Why: This proxy only forwarded a few headers, so sign-in tokens were
+      //      silently dropped in the LocalStack setup and every request
+      //      looked signed out. Only used with ./bin/start-dev.sh.
+      ...(req.headers.authorization ? { 'authorization': req.headers.authorization } : {})
     }
   };
 

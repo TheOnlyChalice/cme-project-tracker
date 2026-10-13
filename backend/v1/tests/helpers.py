@@ -7,10 +7,12 @@ from datetime import date, timedelta
 from typing import Any
 from unittest import mock
 
-from app import clock
+from app import clock, tokens
 from app.seed import seed_data, seed_id
 from app.store import store
 from function import handler
+
+os.environ.setdefault("JWT_SECRET", "test-secret-only-for-unit-tests-0123456789")
 
 # A Wednesday, so "this week" started on Monday 2026-10-12.
 FROZEN_TODAY = date(2026, 10, 14)
@@ -62,7 +64,8 @@ class ApiTestCase(unittest.TestCase):
         Args:
             method: HTTP method.
             path: Path after /api/v1, e.g. "/projects".
-            user: Username or ID for the X-User-Id header.
+            user: Username or ID to sign in as (a token is issued for them),
+                  or None to send no token.
             body: JSON body, if any.
             query: Query parameters, if any.
 
@@ -72,12 +75,27 @@ class ApiTestCase(unittest.TestCase):
         event = {
             "rawPath": "/api/v1" + path,
             "requestContext": {"http": {"method": method}},
-            "headers": {"x-user-id": user} if user else {},
+            "headers": {"authorization": f"Bearer {self.token_for(user)}"} if user else {},
             "body": json.dumps(body) if body is not None else None,
             "queryStringParameters": query,
         }
         result = handler(event)
         return result["statusCode"], json.loads(result["body"]) if result.get("body") else None
+
+    def token_for(self, user: str) -> str:
+        """
+        Issue an access token for a user, looked up by username or ID.
+
+        Args:
+            user: Username or ID.
+
+        Returns:
+            A signed access token.
+        """
+        record = store.get("users", user) or next(iter(store.find("users", where={"username": user})), None)
+        if record is None:
+            raise ValueError(f"No such test user: {user}")
+        return tokens.issue_token(record, tokens.ACCESS)
 
     def ok(self, method: str, path: str, user: str | None = None,
            body: Any = None, query: dict[str, str] | None = None, expected: int = 200) -> Any:

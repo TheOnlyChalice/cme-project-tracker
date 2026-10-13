@@ -5,8 +5,9 @@ folder as a single AWS Lambda function (Python 3.13, `function.handler`).
 Locally it runs with a small dev server that calls the same handler.
 
 Data is stored in **PostgreSQL** (Aurora PostgreSQL on AWS). For tests and
-quick runs it can also use in-memory storage. The caller is identified with a
-temporary `X-User-Id` header until JWT login arrives in the next branch.
+quick runs it can also use in-memory storage. Users sign in with a username
+(or email) and password and receive a **JWT**, which they send with every
+request as `Authorization: Bearer <token>`.
 
 ## Storage
 
@@ -46,8 +47,15 @@ It prints `Storage: postgres` (or `memory` without a `.env`). The API is now at
 `http://localhost:3001/api/v1`. In a second terminal:
 
 ```bash
-curl http://localhost:3001/api/v1/health
-curl http://localhost:3001/api/v1/insights/at-risk -H "X-User-Id: adm001"
+curl -s http://localhost:3001/api/v1/health
+
+# Sign in and keep the access token in a variable
+TOKEN=$(curl -s -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"adm001","password":"ChangeMe123"}' \
+  | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+
+curl -s http://localhost:3001/api/v1/insights/at-risk -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Run the tests
@@ -71,10 +79,27 @@ POSTGRES_PASS=your-password POSTGRES_NAME=cme_test python -m unittest -v
 To measure coverage, install the `coverage` package and run
 `coverage run -m unittest && coverage report`.
 
-## Acting as a user (Phase 1 only)
+## Signing in
 
-Send an `X-User-Id` header with a user's ID or username. These users exist
-every time the server starts (password `ChangeMe123`, used from Phase 2):
+| Endpoint | Body | Returns |
+| --- | --- | --- |
+| `POST /auth/login` | `{"username": "...", "password": "..."}` (username or email) | `access_token`, `refresh_token`, `expires_in`, `user` |
+| `POST /auth/refresh` | `{"refresh_token": "..."}` | A new token pair |
+| `POST /auth/logout` | (send the access token) | Signs out on every device |
+
+- Access tokens last 60 minutes (`ACCESS_TOKEN_MINUTES`); refresh tokens last
+  7 days (`REFRESH_TOKEN_DAYS`). A `token_expired` error means "refresh".
+- Tokens are signed with `JWT_SECRET`. On AWS, Terraform generates it
+  (`infra/jwt.tf`); locally, set it in `backend/v1/.env`.
+- Logging out, changing a password, a role change, or being archived signs the
+  user out everywhere (`token_revoked`).
+- Changing your own password requires `current_password`.
+- Five wrong passwords in a row lock the account for 15 minutes (`429 account_locked`).
+  An admin setting a new password unlocks it.
+- The user's role is always read from the database, so role changes apply immediately.
+
+These starter users exist when the database is first created. They all use the
+password `ChangeMe123` (set `DEV_SEED_PASSWORD` to change it before first start):
 
 | Username | Role | Reports to | Notes |
 | --- | --- | --- | --- |
@@ -118,6 +143,8 @@ All paths are under `/api/v1`. Errors always look like
 | Method | Path | Who |
 | --- | --- | --- |
 | GET | `/health`, `/` | anyone |
+| POST | `/auth/login`, `/auth/refresh` | anyone |
+| POST | `/auth/logout` | any signed-in user |
 | GET | `/me` | any user |
 | GET | `/users?role=&manager_id=&search=&include_archived=` | any user (filtered by role) |
 | POST | `/users` | admin |
@@ -157,7 +184,9 @@ All paths are under `/api/v1`. Errors always look like
 | `app/storage/postgres.py` | PostgreSQL storage (psycopg 3) |
 | `app/storage/memory.py` | In-memory storage for tests and quick runs |
 | `app/storage/schema.sql` | Tables, constraints, indexes, audit trigger |
-| `app/auth.py` | Identifies the caller (dev header now, JWT in Phase 2) |
+| `app/auth.py` | Identifies the caller from their Bearer token |
+| `app/tokens.py` | Creates and checks JWTs |
+| `app/services/auth.py` | Login, refresh, logout, lockout |
 | `app/permissions.py` | Roles and visibility rules |
 | `app/audit.py` | Audit log writer and filters |
 | `app/clock.py` | Company time zone and Monday-based weeks |

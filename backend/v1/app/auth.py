@@ -1,28 +1,52 @@
-"""Identify the user making each request."""
+"""Identify the user making each request from their sign-in token."""
 
 from typing import Any
 
+from app import tokens
 from app.request import Request
 from app.responses import ApiError
 from app.store import store
 
 Record = dict[str, Any]
 
-DEV_USER_HEADER = "x-user-id"
+
+def user_from_claims(claims: dict[str, Any]) -> Record:
+    """
+    Load the user a verified token belongs to, and check it's still valid.
+
+    Args:
+        claims: Verified token claims.
+
+    Returns:
+        The user's current record.
+
+    Raises:
+        ApiError: 401 if the user is gone or archived, or the token was revoked.
+    """
+    user = store.get("users", str(claims.get("sub", "")))
+    if user is None or user.get("is_archived"):
+        raise ApiError(401, "invalid_user", "This account no longer exists or is archived.")
+    # [TOKEN REVOCATION HERE]
+    # How: Every token records the user's token_version when it was issued.
+    #      Logging out, changing a password, changing role, or being archived
+    #      increases token_version, so all older tokens stop working at once.
+    # Why: JWTs can't be "deleted" once issued. A version number stored in the
+    #      database gives a simple, reliable way to sign someone out everywhere.
+    if claims.get("ver") != user.get("token_version", 0):
+        raise ApiError(401, "token_revoked", "You've been signed out. Please sign in again.")
+    return user
 
 
-# [DEV USER HEADER HERE]
-# How: The caller names who they are acting as in an "X-User-Id" header,
-#      using either the user's ID or their 6-character username.
-# Why: Phase 1 has no login, but every visibility and permission rule depends
-#      on who is asking. This header lets all of those rules be built and
-#      tested now. It is TEMPORARY: Phase 2 (08-jwt-auth) replaces this one
-#      function with JWT token checks, and no permission rule has to change.
-#      Anyone can claim any identity with this header, so it must be removed
-#      before real data is used.
+# [BEARER TOKEN AUTH HERE]
+# How: The caller sends "Authorization: Bearer <access token>". The token is
+#      verified, then the user is loaded fresh from the database, so their
+#      current role, manager, and archived status are always what's used.
+# Why: This replaces Phase 1's X-User-Id header, which let anyone claim to be
+#      anyone. Every permission rule calls this one function, so swapping the
+#      header for JWT changed nothing else in the permission system.
 def current_user(request: Request) -> Record:
     """
-    Return the user making the request.
+    Return the signed-in user making the request.
 
     Args:
         request: The incoming request.
@@ -31,16 +55,12 @@ def current_user(request: Request) -> Record:
         The acting user's record.
 
     Raises:
-        ApiError: 401 if no user is given or the user doesn't exist or is archived.
+        ApiError: 401 if the token is missing, invalid, expired, or revoked.
     """
-    claimed = (request.headers.get(DEV_USER_HEADER) or "").strip()
-    if not claimed:
+    header = request.headers.get("authorization", "")
+    scheme, _, token = header.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
         raise ApiError(401, "authentication_required",
-                       "Send an X-User-Id header with your user ID or username.")
-    user = store.get("users", claimed)
-    if user is None:
-        matches = store.find("users", where={"username": claimed.lower()})
-        user = matches[0] if matches else None
-    if user is None or user.get("is_archived"):
-        raise ApiError(401, "invalid_user", "That user doesn't exist or is archived.")
-    return user
+                       "Sign in and send your token as 'Authorization: Bearer <token>'.")
+    claims = tokens.decode_token(token.strip(), tokens.ACCESS)
+    return user_from_claims(claims)

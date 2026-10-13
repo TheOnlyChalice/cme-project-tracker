@@ -21,7 +21,8 @@ class AuditTests(ApiTestCase):
         self.assertNotIn("updated_at", entry["changes"])
 
     def test_passwords_are_never_logged(self) -> None:
-        self.ok("PATCH", f"/users/{uid('emp001')}", "emp001", {"password": "Another123"})
+        self.ok("PATCH", f"/users/{uid('emp001')}", "emp001",
+                {"password": "Another123", "current_password": "ChangeMe123"})
         entry = self.ok("GET", "/audit-log", "adm001")["entries"][0]
         self.assertEqual(entry["changes"]["password_hash"]["after"], "[changed]")
 

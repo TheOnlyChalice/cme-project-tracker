@@ -11,7 +11,7 @@ import string
 from typing import Any
 
 from app.audit import record_audit
-from app.passwords import hash_password, password_problem
+from app.passwords import hash_password, password_problem, verify_password
 from app.permissions import (ADMIN, EMPLOYEE, MANAGER, ROLES, can_view_user,
                              has_role, is_admin, require_role)
 from app.responses import ApiError
@@ -32,8 +32,13 @@ USERNAME_LENGTH = 6
 # Why: The requirements say employees can modify only their own personal data
 #      and only admins can change roles or see salary. Rejecting unexpected
 #      fields (instead of silently ignoring them) makes mistakes obvious.
-SELF_EDITABLE = ("first_name", "last_name", "email", "password", "profile_picture_url")
+SELF_EDITABLE = ("first_name", "last_name", "email", "password", "current_password",
+                 "profile_picture_url")
 ADMIN_EDITABLE = SELF_EDITABLE + ("role", "job_title", "salary", "manager_id")
+CREATE_FIELDS = tuple(f for f in ADMIN_EDITABLE if f != "current_password")
+
+# Sign-in bookkeeping that never leaves the API (or only for admins).
+HIDDEN_FIELDS = frozenset({"password_hash", "token_version", "failed_login_count"})
 
 
 # [USER SERIALIZATION HERE]
@@ -53,9 +58,10 @@ def serialize_user(user: Record, viewer: Record) -> Record:
     Returns:
         A copy safe to return to this viewer.
     """
-    data = {key: value for key, value in user.items() if key != "password_hash"}
+    data = {key: value for key, value in user.items() if key not in HIDDEN_FIELDS}
     if not is_admin(viewer):
         data.pop("salary", None)
+        data.pop("locked_until", None)
     data["current_project_ids"] = current_project_ids(user)
     return data
 
@@ -207,7 +213,7 @@ def create_user(actor: Record, data: Any) -> Record:
     """
     require_role(actor, ADMIN)
     check = Validator(data)
-    reject_unknown_fields(check.data, ADMIN_EDITABLE)
+    reject_unknown_fields(check.data, CREATE_FIELDS)
     check.string("first_name", required=True, max_length=100)
     check.string("last_name", required=True, max_length=100)
     check.email("email", required=True)
@@ -248,6 +254,9 @@ def create_user(actor: Record, data: Any) -> Record:
         "salary": check.cleaned.get("salary"),
         "profile_picture_url": check.cleaned.get("profile_picture_url"),
         "manager_id": manager_id,
+        "token_version": 0,
+        "failed_login_count": 0,
+        "locked_until": None,
         "is_archived": False,
         "archived_at": None,
         "created_at": timestamp,
@@ -387,6 +396,16 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
         problem = password_problem(check.data["password"])
         if problem:
             check.errors["password"] = problem
+        # [CURRENT PASSWORD CHECK HERE]
+        # How: Changing your own password requires sending your current one too.
+        #      Admins resetting someone else's password don't need it.
+        # Why: If someone walks up to a signed-in computer, or steals a token,
+        #      they still can't lock the real owner out by changing the password.
+        elif editing_self and not verify_password(str(check.data.get("current_password", "")),
+                                                  target["password_hash"]):
+            check.errors["current_password"] = "Enter your current password correctly."
+    elif check.has("current_password"):
+        check.errors["current_password"] = "Only send this when changing your password."
     if check.has("manager_id") and check.data["manager_id"] is not None:
         _validate_manager(check.data["manager_id"], target["id"], check.errors)
     check.raise_if_errors()
@@ -394,6 +413,8 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     changes: Record = dict(check.cleaned)
     if check.has("password"):
         changes["password_hash"] = hash_password(check.data["password"])
+        changes["failed_login_count"] = 0
+        changes["locked_until"] = None
     if check.has("manager_id"):
         changes["manager_id"] = check.data["manager_id"]
 
@@ -419,6 +440,10 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
                        "Reassign this user's team to another manager before changing their role.")
     if target["role"] == ADMIN and new_role != ADMIN and _active_admin_count() <= 1:
         raise ApiError(409, "last_admin", "You can't remove the last admin.")
+
+    # Signing everyone out after a password or role change (see revoke_tokens).
+    if "password_hash" in changes or ("role" in changes and changes["role"] != target["role"]):
+        changes["token_version"] = (target.get("token_version") or 0) + 1
 
     changes["updated_at"] = now_iso()
     updated = store.update(TABLE, target["id"], changes)
@@ -490,7 +515,8 @@ def archive_user(actor: Record, user_id: str) -> Record:
         raise ApiError(409, "last_admin", "You can't archive the last admin.")
     timestamp = now_iso()
     updated = store.update(TABLE, target["id"], {
-        "is_archived": True, "archived_at": timestamp, "updated_at": timestamp})
+        "is_archived": True, "archived_at": timestamp, "updated_at": timestamp,
+        "token_version": (target.get("token_version") or 0) + 1})
     record_audit(actor, "archive", "user", target["id"], target, updated)
     release_future_assignments(actor, lambda a: a["user_id"] == target["id"])
     return serialize_user(updated, actor)
@@ -520,3 +546,21 @@ def restore_user(actor: Record, user_id: str) -> Record:
         "is_archived": False, "archived_at": None, "updated_at": now_iso()})
     record_audit(actor, "restore", "user", target["id"], target, updated)
     return serialize_user(updated, actor)
+
+
+# [REVOKE TOKENS HERE]
+# How: Adds 1 to the user's token_version. Tokens carry the version they were
+#      issued with, so every older token is rejected from then on.
+# Why: Used for logout, and applied automatically after a password change, a
+#      role change, or archiving, so an old token can never outlive the
+#      change that should have ended it.
+def revoke_tokens(user_id: str) -> None:
+    """
+    Invalidate every token a user currently holds.
+
+    Args:
+        user_id: The user's ID.
+    """
+    user = store.get(TABLE, user_id)
+    if user is not None:
+        store.update(TABLE, user_id, {"token_version": (user.get("token_version") or 0) + 1})

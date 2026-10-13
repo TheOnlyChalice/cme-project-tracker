@@ -1,9 +1,12 @@
 # [REQUIREMENTS HERE]
-# How: psycopg talks to PostgreSQL; tzdata provides time zone data.
+# How: psycopg talks to PostgreSQL, PyJWT signs and checks sign-in tokens, and
+#      tzdata provides time zone data.
 # Why: Terraform discovers Python services by finding this file and installs
 #      these into the Lambda package. psycopg[binary] matches the workshop's
-#      example service and needs no compiler. tzdata gives Python the time
-#      zone database on Windows, so the Monday 12:00 AM (Eastern) week reset
-#      works locally as well as on Lambda.
+#      example service and needs no compiler. PyJWT is the standard, widely
+#      reviewed JWT library, so we don't write our own token cryptography.
+#      tzdata gives Python the time zone database on Windows, so the Monday
+#      12:00 AM (Eastern) week reset works locally as well as on Lambda.
 psycopg[binary]==3.2.3
+PyJWT==2.10.1
 tzdata==2025.2

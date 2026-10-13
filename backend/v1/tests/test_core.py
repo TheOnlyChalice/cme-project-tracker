@@ -33,7 +33,7 @@ class RoutingTests(ApiTestCase):
         self.assertEqual(status, 400)  # empty body -> missing fields
         from function import handler
         result = handler({"rawPath": "/users", "requestContext": {"http": {"method": "POST"}},
-                          "headers": {"x-user-id": "adm001"}, "body": "{not json"})
+                          "headers": {"authorization": f"Bearer {self.token_for('adm001')}"}, "body": "{not json"})
         self.assertEqual(result["statusCode"], 400)
         self.assertEqual(json.loads(result["body"])["error"]["code"], "invalid_json")
 
@@ -42,12 +42,11 @@ class RoutingTests(ApiTestCase):
         from function import handler
         body = base64.b64encode(json.dumps({"first_name": "Bo"}).encode()).decode()
         result = handler({"rawPath": "/users/" + "x", "requestContext": {"http": {"method": "PATCH"}},
-                          "headers": {"x-user-id": "adm001"}, "body": body, "isBase64Encoded": True})
+                          "headers": {"authorization": f"Bearer {self.token_for('adm001')}"}, "body": body, "isBase64Encoded": True})
         self.assertEqual(result["statusCode"], 404)
 
-    def test_missing_or_unknown_user_header(self) -> None:
+    def test_missing_token(self) -> None:
         self.error("GET", "/me", None, 401, "authentication_required")
-        self.error("GET", "/me", "nobody", 401, "invalid_user")
 
     def test_unexpected_errors_become_500_without_details(self) -> None:
         router = Router()

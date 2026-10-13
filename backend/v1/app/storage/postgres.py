@@ -43,6 +43,7 @@ COLUMNS: dict[str, dict[str, str]] = {
         "id": "uuid", "username": "text", "first_name": "text", "last_name": "text",
         "email": "text", "password_hash": "text", "role": "text", "job_title": "text",
         "salary": "numeric", "profile_picture_url": "text", "manager_id": "uuid",
+        "token_version": "integer", "failed_login_count": "integer", "locked_until": "timestamptz",
         "is_archived": "boolean", "archived_at": "timestamptz",
         "created_at": "timestamptz", "updated_at": "timestamptz",
     },

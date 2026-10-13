@@ -1,7 +1,7 @@
 """Route registration for every API domain."""
 
 from app.router import Router
-from app.routes import audit, health, hours, insights, milestones, projects, users
+from app.routes import audit, auth, health, hours, insights, milestones, projects, users
 
 
 # [DOMAIN REGISTRATION HERE]
@@ -17,6 +17,7 @@ def register_all_routes(router: Router) -> None:
         router: The router to register routes on.
     """
     health.register(router)
+    auth.register(router)
     users.register(router)
     projects.register(router)
     milestones.register(router)

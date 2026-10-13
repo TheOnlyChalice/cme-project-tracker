@@ -22,8 +22,9 @@ from app.utils import now_iso
 # Why: Only an admin can create users, so the very first admin has to exist
 #      already. Seeding runs only when the users table is empty: in memory
 #      that's every restart; in PostgreSQL it's just the first start, after
-#      which the data persists. Fixed IDs (uuid5) mean the usernames and IDs
-#      below always work in the X-User-Id header.
+#      which the data persists. Fixed IDs (uuid5) keep the demo data identical
+#      everywhere. All starter users sign in with DEV_SEED_PASSWORD (default
+#      ChangeMe123); change these passwords before real use.
 SEED_NAMESPACE = uuid.UUID("6f1c2a52-8d1e-4c43-9a57-4f3d2b9e7a10")
 DEFAULT_SEED_PASSWORD = "ChangeMe123"  # nosec B105 - dev-only default, override with env var
 
@@ -84,6 +85,9 @@ def _seed_users() -> None:
             "salary": Decimal(seed["salary"]),
             "profile_picture_url": None,
             "manager_id": seed_id(seed["manager"]) if seed["manager"] else None,
+            "token_version": 0,
+            "failed_login_count": 0,
+            "locked_until": None,
             "is_archived": False,
             "archived_at": None,
             "created_at": timestamp,
