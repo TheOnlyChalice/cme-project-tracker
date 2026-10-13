@@ -385,7 +385,7 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
 #      completed or abandoned, only admins abandon or delete, and restoring
 #      means un-archiving. Restoring to "active" avoids a project that is
 #      visible again but still marked finished.
-def _close_project(actor: Record, project: Record, status: str | None, action: str) -> Record:
+def close_project(actor: Record, project: Record, status: str | None, action: str) -> Record:
     """
     Archive a project, optionally setting a final status.
 
@@ -420,7 +420,7 @@ def complete_project(actor: Record, project_id: str) -> Record:
         The updated project, serialized for the actor.
     """
     project = get_managed_project(actor, project_id)
-    return serialize_project(_close_project(actor, project, "completed", "complete"), actor)
+    return serialize_project(close_project(actor, project, "completed", "complete"), actor)
 
 
 def abandon_project(actor: Record, project_id: str) -> Record:
@@ -436,7 +436,7 @@ def abandon_project(actor: Record, project_id: str) -> Record:
     """
     require_role(actor, ADMIN)
     project = get_managed_project(actor, project_id)
-    return serialize_project(_close_project(actor, project, "abandoned", "abandon"), actor)
+    return serialize_project(close_project(actor, project, "abandoned", "abandon"), actor)
 
 
 def archive_project(actor: Record, project_id: str) -> Record:
@@ -454,7 +454,7 @@ def archive_project(actor: Record, project_id: str) -> Record:
     project = get_visible_project(actor, project_id)
     if project.get("is_archived"):
         raise ApiError(409, "already_archived", "This project is already archived.")
-    return serialize_project(_close_project(actor, project, None, "archive"), actor)
+    return serialize_project(close_project(actor, project, None, "archive"), actor)
 
 
 def restore_project(actor: Record, project_id: str) -> Record:

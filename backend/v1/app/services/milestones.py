@@ -11,7 +11,7 @@ from app.audit import record_audit
 from app.permissions import ADMIN, is_admin, require_role
 from app.responses import ApiError
 from app.services.hour_release import release_future_assignments
-from app.services.projects import get_managed_project, get_visible_project
+from app.services.projects import close_project, get_managed_project, get_visible_project
 from app.store import store
 from app.utils import new_id, now_iso
 from app.validation import Validator, reject_unknown_fields
@@ -297,12 +297,29 @@ def complete_milestone(actor: Record, milestone_id: str) -> Record:
     record_audit(actor, "complete", "milestone", milestone["id"], milestone, updated)
     release_future_assignments(actor, lambda a: a["milestone_id"] == milestone["id"])
     _advance_active_milestone(actor, project["id"], milestone["id"])
-    return serialize_milestone(updated)
+
+    # [AUTO-COMPLETE PROJECT HERE]
+    # How: When the last open milestone of a project is completed, the project
+    #      itself is completed and archived in the same step, with its own
+    #      "complete" audit entry under the same person. The response says
+    #      project_completed: true so the frontend can tell the user.
+    # Why: Your rule: finishing every milestone finishes the project. Doing it
+    #      in the same transaction means the milestone and project can never
+    #      disagree, and managers don't have to complete the project by hand.
+    #      Archived milestones don't count, since they were removed from the plan.
+    still_open = store.find(TABLE, where={"project_id": project["id"], "status": "active",
+                                          "is_archived": False})
+    project_completed = False
+    if not still_open:
+        current = store.get("projects", project["id"])
+        close_project(actor, current, "completed", "complete")
+        project_completed = True
+    return {**serialize_milestone(updated), "project_completed": project_completed}
 
 
 def archive_milestone(actor: Record, milestone_id: str) -> Record:
     """
-    Archive (soft-delete) a milestone (the project's manager or an admin).
+    Archive (soft-delete) a milestone (admins only).
 
     Args:
         actor: The acting user.
@@ -311,6 +328,11 @@ def archive_milestone(actor: Record, milestone_id: str) -> Record:
     Returns:
         The updated milestone, serialized.
     """
+    # [ADMIN-ONLY MILESTONE ARCHIVE HERE]
+    # How: Only admins may archive a milestone; managers complete them instead.
+    # Why: Your rule: archiving (deleting) is an admin action for every kind
+    #      of item, so managers can finish work but not remove it.
+    require_role(actor, ADMIN)
     milestone, project = get_managed_milestone(actor, milestone_id)
     timestamp = now_iso()
     updated = store.update(TABLE, milestone["id"], {

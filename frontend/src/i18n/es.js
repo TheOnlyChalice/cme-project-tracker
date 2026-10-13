@@ -230,6 +230,10 @@ const es = {
   'Restore "{name}"?': '¿Restaurar "{name}"?',
   'The milestone becomes visible again.': 'El hito vuelve a ser visible.',
   'Remove these hours?': '¿Quitar estas horas?',
+  'All milestones are complete, so the project was completed and archived.':
+    'Todos los hitos están completos, así que el proyecto se completó y se archivó.',
+  'This is the last open milestone. Completing it will also complete and archive the whole project.':
+    'Este es el último hito abierto. Al completarlo también se completará y archivará todo el proyecto.',
   'The hours are freed up so they can be booked elsewhere.': 'Las horas quedan libres para reservarse en otro lugar.',
 
   // Milestone form

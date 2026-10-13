@@ -60,7 +60,8 @@ class MilestoneTests(ApiTestCase):
                    {"name": "X"})
 
     def test_archive_and_restore(self) -> None:
-        self.ok("DELETE", f"/milestones/{MIGRATION_M1}", "mgr002")
+        self.error("DELETE", f"/milestones/{MIGRATION_M1}", "mgr002", 403, "forbidden")
+        self.ok("DELETE", f"/milestones/{MIGRATION_M1}", "adm001")
         self.assertEqual(self.ok("GET", f"/projects/{MIGRATION}", "mgr002")["active_milestone_id"],
                          MIGRATION_M2)
         self.error("GET", f"/milestones/{MIGRATION_M1}", "mgr002", 404)
@@ -87,3 +88,32 @@ class MilestoneTests(ApiTestCase):
         self.assertTrue(chain[1]["blocked"])
         portal = self.ok("GET", f"/projects/{PORTAL}/milestone-chain", "mgr001")["milestones"]
         self.assertFalse(portal[1]["blocked"])  # milestone 1 is completed
+
+
+class AutoCompleteTests(ApiTestCase):
+    """Completing every milestone completes the project."""
+
+    def test_last_milestone_completes_and_archives_project(self) -> None:
+        first = self.ok("POST", f"/milestones/{MIGRATION_M1}/complete", "mgr002")
+        self.assertFalse(first["project_completed"])
+        self.ok("GET", f"/projects/{MIGRATION}", "mgr002")
+        last = self.ok("POST", f"/milestones/{MIGRATION_M2}/complete", "mgr002")
+        self.assertTrue(last["project_completed"])
+        self.error("GET", f"/projects/{MIGRATION}", "mgr002", 404)
+        project = self.ok("GET", f"/projects/{MIGRATION}", "adm001")
+        self.assertEqual((project["status"], project["is_archived"]), ("completed", True))
+        log = self.ok("GET", "/audit-log", "adm001", query={"entity_id": MIGRATION, "action": "complete"})
+        self.assertEqual(log["entries"][0]["actor_id"], self.ok("GET", "/me", "mgr002")["id"])
+
+    def test_archived_milestones_do_not_block_completion(self) -> None:
+        self.ok("DELETE", f"/milestones/{PORTAL_M3}", "adm001")
+        done = self.ok("POST", f"/milestones/{PORTAL_M2}/complete", "mgr001")
+        self.assertTrue(done["project_completed"])
+
+    def test_completed_project_releases_future_hours(self) -> None:
+        self.ok("POST", f"/milestones/{MIGRATION_M1}/complete", "mgr002")
+        self.ok("POST", f"/milestones/{MIGRATION_M2}/complete", "mgr002")
+        future = [a for a in self.ok("GET", "/hour-assignments", "adm001",
+                                     query={"project_id": MIGRATION})["assignments"]
+                  if a["week_start"] > "2026-10-12"]
+        self.assertEqual(future, [])

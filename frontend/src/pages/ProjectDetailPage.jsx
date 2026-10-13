@@ -99,6 +99,26 @@ export default function ProjectDetailPage() {
   //      project list; admins stay on the page.
   // Why: Completed projects are archived and only admins can see archived
   //      work, so a manager staying here would immediately get "not found".
+  // [LAST MILESTONE HANDLING HERE]
+  // How: Completing a milestone checks the backend's project_completed answer.
+  //      If it was the last open one, the user is told the project was
+  //      completed and archived; managers go back to the project list, since
+  //      they can no longer see archived projects.
+  // Why: Matches the rule that finishing every milestone finishes the
+  //      project, and the confirm dialog warns about it beforehand.
+  const openMilestones = milestones.filter((m) => m.status === 'active' && !m.is_archived);
+  const completeMilestone = async () => {
+    const result = await api(`/milestones/${dialog.milestone.id}/complete`, { method: 'POST' });
+    if (result.project_completed) {
+      notify(t('All milestones are complete, so the project was completed and archived.'));
+      if (admin) refresh();
+      else navigate('/projects');
+    } else {
+      notify(t('Milestone completed'));
+      refresh();
+    }
+  };
+
   const completeProject = async () => {
     await api(`/projects/${id}/complete`, { method: 'POST' });
     notify(t('Project completed'));
@@ -178,7 +198,7 @@ export default function ProjectDetailPage() {
                     <>
                       <Tooltip title={t('Edit')}><IconButton size="small" aria-label={t('Edit {name}', { name: m.name })} onClick={() => setDialog({ type: 'milestone', milestone: m })}><EditIcon fontSize="small" /></IconButton></Tooltip>
                       <Tooltip title={t('Mark complete')}><IconButton size="small" color="success" aria-label={t('Complete {name}', { name: m.name })} onClick={() => setDialog({ type: 'completeMilestone', milestone: m })}><CheckCircleIcon fontSize="small" /></IconButton></Tooltip>
-                      <Tooltip title={t('Archive')}><IconButton size="small" aria-label={t('Archive {name}', { name: m.name })} onClick={() => setDialog({ type: 'archiveMilestone', milestone: m })}><ArchiveIcon fontSize="small" /></IconButton></Tooltip>
+                      {admin && <Tooltip title={t('Archive')}><IconButton size="small" aria-label={t('Archive {name}', { name: m.name })} onClick={() => setDialog({ type: 'archiveMilestone', milestone: m })}><ArchiveIcon fontSize="small" /></IconButton></Tooltip>}
                     </>
                   )}
                   {admin && m.is_archived && open && (
@@ -267,8 +287,10 @@ export default function ProjectDetailPage() {
         message={t('The project becomes active again and visible to its manager and team.')}
         onConfirm={action(`/projects/${id}/restore`, t('Project restored'))} onClose={close} />
       <ConfirmDialog open={dialog?.type === 'completeMilestone'} title={t('Complete "{name}"?', { name: dialog?.milestone?.name })} confirmLabel="Complete" color="success"
-        message={t('The milestone is marked completed, the next one becomes current, and future booked hours on it are released.')}
-        onConfirm={action(`/milestones/${dialog?.milestone?.id}/complete`, t('Milestone completed'))} onClose={close} />
+        message={openMilestones.length === 1 && dialog?.milestone && openMilestones[0].id === dialog.milestone.id
+          ? t('This is the last open milestone. Completing it will also complete and archive the whole project.')
+          : t('The milestone is marked completed, the next one becomes current, and future booked hours on it are released.')}
+        onConfirm={completeMilestone} onClose={close} />
       <ConfirmDialog open={dialog?.type === 'archiveMilestone'} title={t('Archive "{name}"?', { name: dialog?.milestone?.name })} confirmLabel="Archive" color="error"
         message={t('The milestone is hidden and its future booked hours are released. An admin can restore it.')}
         onConfirm={async () => { await api(`/milestones/${dialog.milestone.id}`, { method: 'DELETE' }); notify(t('Milestone archived')); refresh(); }} onClose={close} />
