@@ -1,0 +1,6 @@
+# [REQUIREMENTS HERE]
+# How: Only tzdata is needed; everything else uses the Python standard library.
+# Why: Terraform discovers Python services by finding this file. tzdata gives
+#      Python the time zone database on Windows, where it isn't built in, so
+#      the Monday 12:00 AM (Eastern) week reset works locally as well as on Lambda.
+tzdata==2025.2

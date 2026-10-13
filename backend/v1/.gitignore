@@ -1,0 +1,13 @@
+# [GITIGNORE WHITELIST HERE]
+# How: Ignore everything in this folder, then re-include only our own files.
+# Why: bin/start-dev.sh pip-installs dependencies directly into each service
+#      folder. Without this, hundreds of library files would be committed and
+#      scanned by the Bandit security check in .github/workflows.
+/*
+!/.gitignore
+!/README.md
+!/function.py
+!/dev_server.py
+!/requirements.txt
+!/app/
+!/tests/

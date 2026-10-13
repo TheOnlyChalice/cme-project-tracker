@@ -1,0 +1,61 @@
+"""Tests for project health, risk flags, utilization, and cost."""
+
+from tests.helpers import MIGRATION, PORTAL, ApiTestCase, day, uid
+
+
+class InsightTests(ApiTestCase):
+    """Dashboards and reports."""
+
+    def test_at_risk_project_has_reasons(self) -> None:
+        risky = self.ok("GET", "/insights/at-risk", "adm001")["projects"]
+        self.assertEqual([p["project_id"] for p in risky], [MIGRATION])
+        codes = {f["code"] for f in risky[0]["risk_flags"]}
+        self.assertTrue({"overdue_milestone", "deadline_near", "behind_schedule",
+                         "over_budget"} <= codes)
+
+    def test_healthy_project_and_cost_figures(self) -> None:
+        health = self.ok("GET", f"/projects/{PORTAL}/health", "mgr001")
+        self.assertFalse(health["at_risk"])
+        self.assertEqual(health["milestones_completed"], 1)
+        self.assertGreater(health["labor_cost_committed"], health["labor_cost_to_date"])
+        self.assertIn("percent_budget_used", health)
+
+    def test_employees_see_progress_but_not_cost(self) -> None:
+        health = self.ok("GET", f"/projects/{MIGRATION}/health", "emp003")
+        self.assertTrue(health["at_risk"])
+        self.assertNotIn("budget", health)
+        self.assertNotIn("labor_cost_to_date", health)
+
+    def test_overview_respects_visibility_and_closed_filter(self) -> None:
+        self.assertEqual(len(self.ok("GET", "/insights/projects", "mgr001")["projects"]), 1)
+        self.ok("POST", f"/projects/{PORTAL}/complete", "adm001")
+        self.assertEqual(len(self.ok("GET", "/insights/projects", "adm001")["projects"]), 1)
+        everything = self.ok("GET", "/insights/projects", "adm001",
+                             query={"include_closed": "true"})["projects"]
+        self.assertEqual(len(everything), 2)
+        closed = next(p for p in everything if p["project_id"] == PORTAL)
+        self.assertEqual(closed["risk_flags"], [])
+
+    def test_new_project_without_milestones_is_flagged(self) -> None:
+        project = self.ok("POST", "/projects", "adm001",
+                          {"name": "Late start", "start_date": day(-40), "end_date": day(-1),
+                           "allocated_hours": 10, "manager_id": uid("mgr001")}, expected=201)
+        codes = {f["code"] for f in self.ok("GET", f"/projects/{project['id']}/health",
+                                            "mgr001")["risk_flags"]}
+        self.assertEqual(codes, {"past_end_date", "no_milestones"})
+
+    def test_missing_salary_is_reported(self) -> None:
+        self.ok("PATCH", f"/users/{uid('emp002')}", "adm001", {"salary": None})
+        health = self.ok("GET", f"/projects/{PORTAL}/health", "adm001")
+        self.assertEqual(health["employees_missing_salary"], 1)
+
+    def test_utilization_states(self) -> None:
+        rows = {r["username"]: r for r in
+                self.ok("GET", "/insights/utilization", "adm001")["employees"]}
+        self.assertEqual(rows["emp003"]["state"], "fully_booked")
+        self.assertEqual(rows["emp001"]["state"], "partly_booked")
+        self.assertEqual(rows["emp001"]["available"], 10)
+        mine = self.ok("GET", "/insights/utilization", "mgr001")["employees"]
+        self.assertEqual(sorted(r["username"] for r in mine), ["emp001", "emp002"])
+        solo = self.ok("GET", "/insights/utilization", "emp002", query={"week": day(14)})
+        self.assertEqual(solo["employees"][0]["state"], "unassigned")
