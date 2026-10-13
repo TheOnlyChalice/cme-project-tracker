@@ -306,8 +306,10 @@ const es = {
   'Your details': 'Tus datos',
   'Profile picture URL': 'URL de la foto de perfil',
   'Optional link to an image (https://...).': 'Enlace opcional a una imagen (https://...).',
-  'Job title, role, manager, and salary are managed by an admin.':
-    'El puesto, el rol, el gerente y el salario los gestiona un administrador.',
+  'Account details': 'Datos de la cuenta',
+  'These are managed by an admin.': 'Estos datos los gestiona un administrador.',
+  'Member since': 'Miembro desde',
+  'Not set': 'Sin definir',
   'Save details': 'Guardar datos',
   'Profile saved': 'Perfil guardado',
   'Change password': 'Cambiar contraseña',

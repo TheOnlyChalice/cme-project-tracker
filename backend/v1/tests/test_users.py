@@ -42,6 +42,15 @@ class UserVisibilityTests(ApiTestCase):
         self.error("GET", f"/users/{uid('mgr001')}/team", "emp001", 404)
         self.error("GET", f"/users/{uid('mgr002')}/team", "mgr001", 404)
 
+    def test_own_record_includes_manager_name_only(self) -> None:
+        me = self.ok("GET", "/me", "emp001")
+        self.assertEqual(me["manager_name"], "Morgan Reyes")
+        self.assertNotIn("salary", me)
+        self.error("GET", f"/users/{uid('mgr001')}", "emp001", 404)
+        other = self.ok("GET", f"/users/{uid('emp001')}", "mgr001")
+        self.assertNotIn("manager_name", other)
+        self.assertNotIn("manager_name", self.ok("GET", "/me", "adm001"))
+
     def test_current_projects_are_derived(self) -> None:
         self.assertEqual(self.ok("GET", "/me", "emp001")["current_project_ids"], [PORTAL])
         self.assertEqual(self.ok("GET", "/me", "mgr002")["current_project_ids"], [MIGRATION])

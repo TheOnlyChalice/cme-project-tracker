@@ -63,6 +63,16 @@ def serialize_user(user: Record, viewer: Record) -> Record:
         data.pop("salary", None)
         data.pop("locked_until", None)
     data["current_project_ids"] = current_project_ids(user)
+    # [OWN MANAGER NAME HERE]
+    # How: When people look at their own record, it includes their manager's
+    #      name (just the name, not the manager's full record).
+    # Why: The profile page shows "Reports to", but employees can't look up
+    #      other users. Adding only the name keeps that rule intact while
+    #      telling them who plans their hours.
+    if viewer["id"] == user["id"] and user.get("manager_id"):
+        manager = store.get(TABLE, user["manager_id"])
+        if manager:
+            data["manager_name"] = f"{manager['first_name']} {manager['last_name']}"
     return data
 
 
