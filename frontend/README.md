@@ -31,6 +31,10 @@ Plex Sans body text, a navy sidebar with the ACME mark, and a white work area.
 - **English and Spanish:** the EN | ES switch translates every screen,
   including backend error messages and risk flags, plus date and money formats.
   Translations live in `src/i18n/es.js`.
+- **Paging and filters for big lists:** the timeline (8 projects per page,
+  "At risk only" switch), Needs attention, team capacity, project health,
+  projects, people, the heat map (with name search and a team filter for
+  admins), and bookings all page through their rows.
 - **Error codes:** every error message shows its HTTP status code (for
   example "Error 409") above the explanation.
 - **Loading feedback:** a progress bar runs across the top of the screen

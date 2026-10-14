@@ -55,9 +55,15 @@ export default function ProjectDialog({ open, project, managers = [], milestones
       start_date: form.start_date,
       end_date: form.end_date,
       allocated_hours: form.allocated_hours === '' ? undefined : Number(form.allocated_hours),
-      budget: form.budget === '' ? null : Number(form.budget),
     };
-    if (canPickManager) values.manager_id = form.manager_id || undefined;
+    // [BUDGET FIELD HERE]
+    // How: The budget field (and its value) is only included for admins;
+    //      managers see the budget on the project page but can't edit it.
+    // Why: Only admins set budgets, and the backend refuses it from managers.
+    if (canPickManager) {
+      values.budget = form.budget === '' ? null : Number(form.budget);
+      values.manager_id = form.manager_id || undefined;
+    }
 
     let body = values;
     if (editing) {
@@ -97,9 +103,11 @@ export default function ProjectDialog({ open, project, managers = [], milestones
       <TextField label={t('Allocated hours')} type="number" value={form.allocated_hours} onChange={set('allocated_hours')} required
         slotProps={{ htmlInput: { min: 1, step: 1 } }} error={!!err('allocated_hours')}
         helperText={err('allocated_hours') || t('Total hours the project may use across all milestones.')} />
-      <TextField label={t('Budget')} type="number" value={form.budget} onChange={set('budget')}
-        slotProps={{ htmlInput: { min: 0, step: 100 }, input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }}
-        error={!!err('budget')} helperText={err('budget') || t('Optional. Compared with labor cost on the dashboard.')} />
+      {canPickManager && (
+        <TextField label={t('Budget')} type="number" value={form.budget} onChange={set('budget')}
+          slotProps={{ htmlInput: { min: 0, step: 100 }, input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }}
+          error={!!err('budget')} helperText={err('budget') || t('Optional. Compared with labor cost on the dashboard.')} />
+      )}
       {editing && (
         <ShiftOptions moves={moves} days={days} shift={shift} onShiftChange={setShift}
           overflowEnd={overflowEnd} extend={extend} onExtendChange={setExtend}

@@ -63,13 +63,18 @@ class ProjectCreateEditTests(ApiTestCase):
 
     def test_manager_edits_own_project_only(self) -> None:
         updated = self.ok("PATCH", f"/projects/{PORTAL}", "mgr001",
-                          {"description": "Updated", "budget": 160000})
+                          {"description": "Updated", "allocated_hours": 1300})
         self.assertEqual(updated["description"], "Updated")
         self.error("PATCH", f"/projects/{PORTAL}", "mgr001", 400, "unknown_fields",
                    {"manager_id": uid("mgr002")})
         self.error("PATCH", f"/projects/{MIGRATION}", "mgr001", 404)
         self.error("PATCH", f"/projects/{PORTAL}", "emp001", 403, "forbidden", {"name": "X"})
         self.error("PATCH", f"/projects/{PORTAL}", "mgr001", 400, "no_changes", {})
+
+    def test_only_admins_change_budget(self) -> None:
+        self.error("PATCH", f"/projects/{PORTAL}", "mgr001", 400, "unknown_fields", {"budget": 1})
+        self.assertEqual(self.ok("GET", f"/projects/{PORTAL}", "mgr001")["budget"], 150000)
+        self.assertEqual(self.ok("PATCH", f"/projects/{PORTAL}", "adm001", {"budget": 175000})["budget"], 175000)
 
     def test_dates_must_still_hold_milestones(self) -> None:
         self.error("PATCH", f"/projects/{PORTAL}", "mgr001", 409, "milestones_outside_dates",

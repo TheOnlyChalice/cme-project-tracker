@@ -22,6 +22,7 @@ import ProjectDialog from '../components/forms/ProjectDialog.jsx';
 import Loading from '../components/Loading.jsx';
 import { useNotify } from '../components/NotifyContext.js';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginator from '../components/Paginator.jsx';
 import PortfolioTimeline from '../components/PortfolioTimeline.jsx';
 import ProgressCell from '../components/ProgressCell.jsx';
 import RiskFlags from '../components/RiskFlags.jsx';
@@ -29,6 +30,7 @@ import StatCard from '../components/StatCard.jsx';
 import StatusChip from '../components/StatusChip.jsx';
 import WeekPicker from '../components/WeekPicker.jsx';
 import useLoader from '../hooks/useLoader.js';
+import usePagination from '../hooks/usePagination.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { formatDate, formatHours, formatMoney, fullName, mondayOf } from '../utils/format.js';
 import { canManageProject, isAdmin } from '../utils/roles.js';
@@ -66,6 +68,7 @@ export default function ProjectDetailPage() {
     () => api('/hour-assignments', { query: { project_id: id, week } }).then((d) => d.assignments),
     [id, week],
   );
+  const hoursPager = usePagination(hours.data, 10);
 
   if (main.loading && !main.data) return <Loading label="Loading project" />;
   if (main.error) {
@@ -308,7 +311,7 @@ export default function ProjectDetailPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {hours.data.map((a) => (
+              {hoursPager.pageItems.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell>{people[a.user_id] ? fullName(people[a.user_id]) : t('Teammate')}</TableCell>
                   <TableCell>{milestones.find((m) => m.id === a.milestone_id)?.name || '—'}</TableCell>
@@ -323,6 +326,7 @@ export default function ProjectDetailPage() {
               ))}
             </TableBody>
           </Table>
+          <Paginator pager={hoursPager} />
         </TableContainer>
       )}
 

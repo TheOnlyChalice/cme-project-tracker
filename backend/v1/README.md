@@ -146,6 +146,8 @@ resets to the starter data every time the server starts.
   created, edited, promoted, moved, archived). `GET /projects/{id}/audit-log`
   shows everything about one project, its milestones, and its hours. Both are
   admin-only, and neither ever rewrites an entry.
+- **Budgets are admin-only:** managers can see a project's budget and how much
+  is used, but only admins can set or change it.
 - **Error format:** every error is `{"error": {"status", "code", "message", "details"}}`.
 - **Speed:** within a request, each table is read once and served from memory
   afterwards (`app/storage/cache.py`), so reports stay fast with ~1,000 records.

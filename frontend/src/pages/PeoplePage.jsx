@@ -16,10 +16,12 @@ import UserDialog from '../components/forms/UserDialog.jsx';
 import Loading from '../components/Loading.jsx';
 import { useNotify } from '../components/NotifyContext.js';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginator from '../components/Paginator.jsx';
 import StatusChip from '../components/StatusChip.jsx';
 import useDebouncedValue from '../hooks/useDebouncedValue.js';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
+import usePagination from '../hooks/usePagination.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { formatMoney, fullName } from '../utils/format.js';
 import { isAdmin } from '../utils/roles.js';
@@ -50,6 +52,11 @@ export default function PeoplePage() {
   const everyone = useLoader(() => (admin ? api('/users').then((d) => d.users) : Promise.resolve([])), [admin]);
   const managers = (everyone.data || []).filter((u) => u.role !== 'employee');
   const names = Object.fromEntries((everyone.data || data || []).map((u) => [u.id, fullName(u)]));
+  // [PEOPLE PAGING HERE]
+  // How: The directory shows 25 people per page (10, 25, 50, or 100), after
+  //      search and role filters are applied.
+  // Why: Admins now see 80+ people; one long table was hard to scan.
+  const pager = usePagination(data, 25);
   const close = () => setDialog(null);
   const refresh = () => {
     reload();
@@ -93,7 +100,7 @@ export default function PeoplePage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((person) => (
+              {pager.pageItems.map((person) => (
                 <TableRow key={person.id} sx={{ opacity: person.is_archived ? 0.6 : 1 }}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -143,6 +150,7 @@ export default function PeoplePage() {
               ))}
             </TableBody>
           </Table>
+          <Paginator pager={pager} options={[10, 25, 50, 100]} label="People per page:" />
         </TableContainer>
       )}
 

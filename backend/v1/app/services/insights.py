@@ -362,7 +362,8 @@ def capacity(actor: Record, start: str | None, weeks: str | None) -> Record:
     for monday in mondays:
         for row in utilization(actor, monday)["employees"]:
             person = people.setdefault(row["user_id"], {
-                "user_id": row["user_id"], "name": row["name"], "username": row["username"], "weeks": []})
+                "user_id": row["user_id"], "name": row["name"], "username": row["username"],
+                "manager_id": row["manager_id"], "weeks": []})
             person["weeks"].append({"week_start": monday, "hours": row["assigned"]})
     ordered = sorted(people.values(), key=lambda p: p["name"])
     return {"weeks": mondays, "capacity": CAPACITY, "people": ordered}

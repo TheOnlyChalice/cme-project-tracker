@@ -23,9 +23,16 @@ Record = dict[str, Any]
 TABLE = "projects"
 STATUSES = ("active", "completed", "abandoned")
 
+# [BUDGET IS ADMIN-ONLY HERE]
+# How: Managers can edit their project's name, description, dates, hours, and
+#      current milestone, but not its budget or its manager. Sending "budget"
+#      as a manager is refused (Error 400, "can't be set here").
+# Why: Your rule: only admins set or change budgets, so the people spending
+#      the money can't move the target they're measured against. Managers can
+#      still see the budget and how much has been used.
 MANAGER_EDITABLE = ("name", "description", "start_date", "end_date",
-                    "allocated_hours", "budget", "active_milestone_id")
-ADMIN_EDITABLE = MANAGER_EDITABLE + ("manager_id",)
+                    "allocated_hours", "active_milestone_id")
+ADMIN_EDITABLE = MANAGER_EDITABLE + ("budget", "manager_id")
 
 
 def _active_assignments(project_id: str) -> list[Record]:

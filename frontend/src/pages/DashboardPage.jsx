@@ -1,19 +1,22 @@
 import WarningAmberIcon from '@mui/icons-material/WarningAmberRounded';
 import {
   Box, Button, Card, CardActionArea, CardContent, LinearProgress, Link, Paper, Stack, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Typography,
+  TableContainer, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
+import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import Loading from '../components/Loading.jsx';
+import Paginator from '../components/Paginator.jsx';
 import PortfolioTimeline from '../components/PortfolioTimeline.jsx';
 import ProgressCell from '../components/ProgressCell.jsx';
 import RiskFlags from '../components/RiskFlags.jsx';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
+import usePagination from '../hooks/usePagination.js';
 import { useLanguage } from '../i18n/LanguageContext.js';
 import { FLAG_LABELS, flagText } from '../i18n/translate.js';
 import { addDays, formatDate, formatHours, formatMoney, getFormatLocale, toIsoDate } from '../utils/format.js';
@@ -63,11 +66,30 @@ export default function DashboardPage() {
     return { projects: health.projects, timeline: timeline.projects, people };
   }, [user.id, manager]);
 
+  // [DASHBOARD PAGING HERE]
+  // How: The timeline shows 8 projects per page (with an "At risk only"
+  //      switch), "Needs attention" 5, team capacity 10, and project health
+  //      10, each with its own page controls. Smaller lists show no controls.
+  // Why: With the full data set an admin had 30+ timeline lanes and 70+
+  //      people on one screen. Paging keeps each card short and scannable.
+  const [lanesFilter, setLanesFilter] = useState('all');
+  const projects = data?.projects || [];
+  const timeline = data?.timeline || [];
+  const people = data?.people;
+  const atRisk = projects.filter((p) => p.at_risk);
+  const shownTimeline = lanesFilter === 'risk' ? timeline.filter((lane) => lane.at_risk) : timeline;
+  const capacityRows = !people ? [] : manager
+    ? [...people.employees].sort((a, b) => Number(b.assigned) - Number(a.assigned))
+      .map((row) => ({ key: row.user_id, label: row.name, hours: Number(row.assigned) }))
+    : people.assignments.map((a) => ({ key: a.assignment_id, label: `${a.project_name} · ${a.milestone_name}`, hours: Number(a.hours) }));
+  const lanePager = usePagination(shownTimeline, 8);
+  const attentionPager = usePagination(atRisk, 5);
+  const capacityPager = usePagination(capacityRows, 10);
+  const healthPager = usePagination(projects, 10);
+
   if (loading && !data) return <Loading label="Loading dashboard" />;
   if (error) return <ErrorAlert error={error} onRetry={reload} />;
 
-  const { projects, timeline, people } = data;
-  const atRisk = projects.filter((p) => p.at_risk);
   const today = toIsoDate(new Date());
   const in30 = addDays(today, 30);
   const due = timeline.flatMap((lane) => lane.milestones)
@@ -77,7 +99,7 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning, {name}' : hour < 18 ? 'Good afternoon, {name}' : 'Good evening, {name}';
 
-  const lanes = timeline.map((lane) => ({
+  const lanes = lanePager.pageItems.map((lane) => ({
     id: lane.project_id,
     name: lane.name,
     subtitle: lane.manager_name,
@@ -104,10 +126,6 @@ export default function DashboardPage() {
     );
   }
 
-  const capacityRows = manager
-    ? [...people.employees].sort((a, b) => Number(b.assigned) - Number(a.assigned))
-      .map((row) => ({ key: row.user_id, label: row.name, hours: Number(row.assigned) }))
-    : people.assignments.map((a) => ({ key: a.assignment_id, label: `${a.project_name} · ${a.milestone_name}`, hours: Number(a.hours) }));
 
   return (
     <Stack spacing={3}>
@@ -145,7 +163,18 @@ export default function DashboardPage() {
 
       <Card>
         <CardContent>
-          <PortfolioTimeline title={t('Portfolio timeline')} lanes={lanes} />
+          <PortfolioTimeline
+            title={t('Portfolio timeline')}
+            lanes={lanes}
+            actions={(
+              <ToggleButtonGroup size="small" exclusive value={lanesFilter} onChange={(_, next) => next && setLanesFilter(next)}
+                aria-label={t('Show')}>
+                <ToggleButton value="all" sx={{ px: 1.5 }}>{t('All projects')}</ToggleButton>
+                <ToggleButton value="risk" sx={{ px: 1.5 }}>{t('At risk only')}</ToggleButton>
+              </ToggleButtonGroup>
+            )}
+          />
+          <Paginator pager={lanePager} options={[8, 16, 32]} label="Projects per page:" />
         </CardContent>
       </Card>
 
@@ -154,7 +183,7 @@ export default function DashboardPage() {
           <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Typography variant="h6" component="h2">{t('Needs attention')}</Typography>
             {atRisk.length === 0 && <Typography color="text.secondary">{t('All on track')}</Typography>}
-            {atRisk.map((project) => (
+            {attentionPager.pageItems.map((project) => (
               <CardActionArea key={project.project_id} component={RouterLink} to={`/projects/${project.project_id}`}
                 sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', gap: 1.75, p: 1.75, borderRadius: 3, bgcolor: 'action.hover' }}>
                 <Box aria-hidden="true" sx={{ flex: '0 0 40px', height: 40, borderRadius: 2.5, bgcolor: 'warning.main', color: 'warning.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -168,6 +197,7 @@ export default function DashboardPage() {
                 </Box>
               </CardActionArea>
             ))}
+            <Paginator pager={attentionPager} options={[5, 10, 25]} label="Projects per page:" />
           </CardContent>
         </Card>
 
@@ -178,7 +208,7 @@ export default function DashboardPage() {
               <Link component={RouterLink} to="/hours" sx={{ fontWeight: 600, fontSize: 14 }}>{manager ? t('Open heat map') : t('Open my week')}</Link>
             </Box>
             {capacityRows.length === 0 && <Typography color="text.secondary">{t('Nothing booked this week.')}</Typography>}
-            {capacityRows.map((row) => (
+            {capacityPager.pageItems.map((row) => (
               <Box key={row.key} sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 150px) minmax(0, 1fr) 56px', alignItems: 'center', gap: 1.5 }}>
                 <Typography variant="body2" noWrap>{row.label}</Typography>
                 <LinearProgress variant="determinate" value={Math.min((row.hours / 40) * 100, 100)}
@@ -186,6 +216,7 @@ export default function DashboardPage() {
                 <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600 }}>{formatHours(row.hours)}</Typography>
               </Box>
             ))}
+            <Paginator pager={capacityPager} options={[10, 25, 50]} />
           </CardContent>
         </Card>
       </Box>
@@ -195,7 +226,7 @@ export default function DashboardPage() {
         {projects.length === 0 && <Typography color="text.secondary">{t('No active projects to show.')}</Typography>}
         {isMobile ? (
           <Stack spacing={2}>
-            {projects.map((p) => (
+            {healthPager.pageItems.map((p) => (
               <Card key={p.project_id}>
                 <CardActionArea component={RouterLink} to={`/projects/${p.project_id}`}>
                   <CardContent>
@@ -225,7 +256,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {projects.map((p) => (
+                {healthPager.pageItems.map((p) => (
                   <TableRow key={p.project_id} hover>
                     <TableCell>
                       <Link component={RouterLink} to={`/projects/${p.project_id}`} underline="hover" sx={{ fontWeight: 600 }}>{p.name}</Link>
@@ -249,6 +280,7 @@ export default function DashboardPage() {
             </Table>
           </TableContainer>
         )}
+        <Paginator pager={healthPager} options={[10, 25, 50]} label="Projects per page:" />
       </Box>
     </Stack>
   );

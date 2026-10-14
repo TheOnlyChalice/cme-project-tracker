@@ -15,11 +15,13 @@ import ProjectDialog from '../components/forms/ProjectDialog.jsx';
 import Loading from '../components/Loading.jsx';
 import { useNotify } from '../components/NotifyContext.js';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginator from '../components/Paginator.jsx';
 import ProgressCell from '../components/ProgressCell.jsx';
 import StatusChip from '../components/StatusChip.jsx';
 import useDebouncedValue from '../hooks/useDebouncedValue.js';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
+import usePagination from '../hooks/usePagination.js';
 import { formatDate, formatHours, fullName } from '../utils/format.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { isAdmin } from '../utils/roles.js';
@@ -62,6 +64,10 @@ export default function ProjectsPage() {
   }, [query, status, archived]);
 
   const people = Object.fromEntries((data?.users || []).map((u) => [u.id, u]));
+  // [PROJECT LIST PAGING HERE]
+  // How: 10 projects per page by default (10, 25, or 50), after filters.
+  // Why: Admins see 30+ projects with the full data set.
+  const pager = usePagination(data?.projects, 10);
   const managers = (data?.users || []).filter((u) => u.role !== 'employee' && !u.is_archived);
 
   return (
@@ -106,7 +112,7 @@ export default function ProjectsPage() {
 
       {data && data.projects.length > 0 && (isMobile ? (
         <Stack spacing={2}>
-          {data.projects.map((p) => (
+          {pager.pageItems.map((p) => (
             <Card key={p.id}>
               <CardActionArea component={RouterLink} to={`/projects/${p.id}`}>
                 <CardContent>
@@ -137,7 +143,7 @@ export default function ProjectsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.projects.map((p) => (
+              {pager.pageItems.map((p) => (
                 <TableRow
                   key={p.id}
                   hover
@@ -174,6 +180,7 @@ export default function ProjectsPage() {
         </TableContainer>
       ))}
 
+      {data && <Paginator pager={pager} label="Projects per page:" />}
       {/* [ARCHIVE INACTIVE BUTTON HERE]
           How: Admins can archive every project with no activity for 14 days
                (and no upcoming hours) in one step, after confirming; the

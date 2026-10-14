@@ -44,7 +44,7 @@ function barSx(state) {
 //      and what's slipping?" in one glance, shows the milestone dependency
 //      chain visually, and makes the date-shifting feature easy to see.
 /** Gantt-style lanes of milestone bars with a today marker. */
-export default function PortfolioTimeline({ lanes, title, linkLanes = true }) {
+export default function PortfolioTimeline({ lanes, title, actions, linkLanes = true }) {
   const t = useT();
   const isMobile = useIsMobile();
   const [zoom, setZoom] = useState('months');
@@ -69,6 +69,7 @@ export default function PortfolioTimeline({ lanes, title, linkLanes = true }) {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
         {title && <Typography variant="h6" component="h2" sx={{ flexGrow: 1 }}>{title}</Typography>}
+        {actions}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.75 }} aria-label={t('Legend')}>
           {legend.map(([state, label]) => (
             <Box key={state} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 13, color: 'text.secondary' }}>
@@ -188,5 +189,6 @@ PortfolioTimeline.propTypes = {
     })).isRequired,
   })).isRequired,
   title: PropTypes.node,
+  actions: PropTypes.node,
   linkLanes: PropTypes.bool,
 };

@@ -3,9 +3,10 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
 import {
-  Box, Button, Card, CardContent, IconButton, LinearProgress, Paper, Stack, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Typography,
+  Box, Button, Card, CardContent, IconButton, InputAdornment, LinearProgress, MenuItem, Paper, Stack, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
@@ -18,12 +19,14 @@ import AssignHoursDialog from '../components/forms/AssignHoursDialog.jsx';
 import Loading from '../components/Loading.jsx';
 import { useNotify } from '../components/NotifyContext.js';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginator from '../components/Paginator.jsx';
 import WeekPicker from '../components/WeekPicker.jsx';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
+import usePagination from '../hooks/usePagination.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { addWeeks, formatDate, formatHours, mondayOf } from '../utils/format.js';
-import { canManageProject, isManager } from '../utils/roles.js';
+import { canManageProject, isAdmin, isManager } from '../utils/roles.js';
 
 const RANGE_WEEKS = 6;
 
@@ -152,14 +155,29 @@ function TeamPlanner({ user }) {
   const grid = useLoader(() => api('/insights/capacity', { query: { start: rangeStart, weeks: RANGE_WEEKS } }), [rangeStart]);
   const bookings = useLoader(() => api('/hour-assignments', { query: { week } }).then((d) => d.assignments), [week]);
   const reference = useLoader(async () => {
-    const [projects, users] = await Promise.all([
+    const [projects, users, managerList] = await Promise.all([
       api('/projects', { query: { status: 'active' } }),
       api('/users', { query: { role: 'employee' } }),
+      api('/users', { query: { role: 'manager' } }),
     ]);
     const lists = await Promise.all(projects.projects.map((p) => api(`/projects/${p.id}/milestones`)));
     const milestones = Object.fromEntries(lists.flatMap((l) => l.milestones).map((m) => [m.id, m]));
-    return { projects: projects.projects, employees: users.users, milestones };
+    return { projects: projects.projects, employees: users.users, managers: managerList.users, milestones };
   }, []);
+
+  // [HEAT MAP FILTERS AND PAGING HERE]
+  // How: Above the heat map, a name search and (for admins) a manager filter
+  //      narrow the rows; the map then shows 15 people per page, and the
+  //      bookings table below shows 15 bookings per page.
+  // Why: Admins see 70+ employees; filtering to one team or finding one
+  //      person, then paging, keeps the grid readable.
+  const [nameFilter, setNameFilter] = useState('');
+  const [managerFilter, setManagerFilter] = useState('');
+  const heatRows = (grid.data?.people || []).filter((person) =>
+    person.name.toLowerCase().includes(nameFilter.trim().toLowerCase())
+    && (!managerFilter || person.manager_id === managerFilter));
+  const heatPager = usePagination(heatRows, 15);
+  const bookingPager = usePagination(bookings.data, 15);
 
   const reloadAll = () => {
     grid.reload();
@@ -199,14 +217,30 @@ function TeamPlanner({ user }) {
             </Box>
             <RangeControls start={rangeStart} onChange={setRangeStart} />
           </Box>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label={t('Find a person')} value={nameFilter} onChange={(e) => setNameFilter(e.target.value)}
+              sx={{ maxWidth: { sm: 280 } }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> } }} />
+            {isAdmin(user) && (
+              <TextField select label={t('Team')} value={managerFilter} onChange={(e) => setManagerFilter(e.target.value)} sx={{ maxWidth: { sm: 260 } }}>
+                <MenuItem value="">{t('All teams')}</MenuItem>
+                {(reference.data?.managers || []).map((m) => (
+                  <MenuItem key={m.id} value={m.id}>{t("{name}'s team", { name: `${m.first_name} ${m.last_name}` })}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          </Stack>
           <ErrorAlert error={grid.error} onRetry={grid.reload} />
           {grid.loading && !grid.data && <Loading />}
-          {grid.data && grid.data.people.length === 0 && (
-            <Typography color="text.secondary">{t('No employees on your team yet.')}</Typography>
+          {grid.data && heatRows.length === 0 && (
+            <Typography color="text.secondary">{grid.data.people.length ? t('Nobody matches.') : t('No employees on your team yet.')}</Typography>
           )}
-          {grid.data && grid.data.people.length > 0 && (
-            <CapacityHeatMap weeks={grid.data.weeks} people={grid.data.people} currentWeek={thisWeek}
-              selectedWeek={week} onSelectWeek={pickWeek} />
+          {grid.data && heatRows.length > 0 && (
+            <>
+              <CapacityHeatMap weeks={grid.data.weeks} people={heatPager.pageItems} currentWeek={thisWeek}
+                selectedWeek={week} onSelectWeek={pickWeek} />
+              <Paginator pager={heatPager} options={[15, 30, 60]} label="People per page:" />
+            </>
           )}
         </CardContent>
       </Card>
@@ -232,7 +266,7 @@ function TeamPlanner({ user }) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {bookings.data.map((a) => {
+                  {bookingPager.pageItems.map((a) => {
                     const project = projectsById[a.project_id];
                     const editable = project && canManageProject(user, project) && a.week_start >= thisWeek;
                     return (
@@ -254,6 +288,7 @@ function TeamPlanner({ user }) {
                   })}
                 </TableBody>
               </Table>
+              <Paginator pager={bookingPager} options={[15, 30, 60]} />
             </TableContainer>
           )}
         </CardContent>
