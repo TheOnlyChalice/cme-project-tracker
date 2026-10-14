@@ -19,7 +19,7 @@ Plex Sans body text, a navy sidebar with the ACME mark, and a white work area.
   their own six-week strip.
 - **Project page:** the same timeline for the project's own milestones.
 - **Login:** split screen with the brand panel beside the sign-in card.
-- **Top bar:** project search (Ctrl+K), language, and light/dark mode.
+- **Top bar:** quick search (Ctrl+K) across projects, milestones, and people, plus language and light/dark mode.
 
 ## Features
 

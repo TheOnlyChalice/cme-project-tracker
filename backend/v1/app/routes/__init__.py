@@ -2,7 +2,7 @@
 
 from app.router import Router
 from app.routes import (audit, auth, health, hours, insights, maintenance, milestones, projects,
-                        users)
+                        search, users)
 
 
 # [DOMAIN REGISTRATION HERE]
@@ -26,3 +26,4 @@ def register_all_routes(router: Router) -> None:
     insights.register(router)
     audit.register(router)
     maintenance.register(router)
+    search.register(router)

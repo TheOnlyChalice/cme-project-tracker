@@ -1,15 +1,17 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import CloseIcon from '@mui/icons-material/Close';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import FolderIcon from '@mui/icons-material/FolderOutlined';
 import HistoryIcon from '@mui/icons-material/HistoryOutlined';
 import LogoutIcon from '@mui/icons-material/LogoutOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
 import PeopleIcon from '@mui/icons-material/PeopleOutline';
 import PersonIcon from '@mui/icons-material/PersonOutline';
 import ScheduleIcon from '@mui/icons-material/ScheduleOutlined';
 import {
-  AppBar, Avatar, Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
+  AppBar, Avatar, Box, Dialog, DialogContent, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Toolbar, Tooltip, Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -20,7 +22,7 @@ import { useT } from '../i18n/LanguageContext.js';
 import { hasRole } from '../utils/roles.js';
 import AppearanceControls from './AppearanceControls.jsx';
 import BrandMark from './BrandMark.jsx';
-import GlobalSearch from './GlobalSearch.jsx';
+import QuickSearch from './QuickSearch.jsx';
 
 const DRAWER_WIDTH = 248;
 const RAIL_WIDTH = 76;
@@ -66,6 +68,7 @@ export default function Layout() {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === 'true');
+  const [searching, setSearching] = useState(false);
 
   const mini = collapsed && !isMobile;
   const width = mini ? RAIL_WIDTH : DRAWER_WIDTH;
@@ -184,19 +187,31 @@ export default function Layout() {
               </IconButton>
             )}
             {isMobile ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
-                <BrandMark size={28} />
-                <Typography variant="h6" noWrap>ACME</Typography>
-              </Box>
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
+                  <BrandMark size={28} />
+                  <Typography variant="h6" noWrap>ACME</Typography>
+                </Box>
+                <IconButton aria-label={t('Quick search')} onClick={() => setSearching(true)}><SearchIcon /></IconButton>
+              </>
             ) : (
               <>
-                <GlobalSearch />
+                <QuickSearch />
                 <Box sx={{ flexGrow: 1 }} />
               </>
             )}
             <AppearanceControls />
           </Toolbar>
         </AppBar>
+        {/* On phones, quick search opens full screen from the top bar's search icon. */}
+        <Dialog fullScreen open={searching} onClose={() => setSearching(false)} aria-label={t('Quick search')}>
+          <DialogContent sx={{ pt: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+              <QuickSearch autoFocus onDone={() => setSearching(false)} />
+              <IconButton aria-label={t('Close')} onClick={() => setSearching(false)}><CloseIcon /></IconButton>
+            </Box>
+          </DialogContent>
+        </Dialog>
         <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, maxWidth: 1320, width: '100%', boxSizing: 'border-box' }}>
           <Outlet />
         </Box>
