@@ -59,3 +59,30 @@ class InsightTests(ApiTestCase):
         self.assertEqual(sorted(r["username"] for r in mine), ["emp001", "emp002"])
         solo = self.ok("GET", "/insights/utilization", "emp002", query={"week": day(14)})
         self.assertEqual(solo["employees"][0]["state"], "unassigned")
+
+
+class TimelineCapacityTests(ApiTestCase):
+    """Data for the portfolio timeline and the hours heat map."""
+
+    def test_timeline_lanes_and_milestone_states(self) -> None:
+        lanes = {lane["name"]: lane for lane in self.ok("GET", "/insights/timeline", "adm001")["projects"]}
+        portal = lanes["Customer Portal Redesign"]
+        self.assertEqual(portal["manager_name"], "Morgan Reyes")
+        self.assertEqual([m["state"] for m in portal["milestones"]], ["done", "in_progress", "planned"])
+        migration = lanes["Data Center Migration"]
+        self.assertEqual(migration["milestones"][0]["state"], "overdue")
+        self.assertTrue(migration["at_risk"])
+
+    def test_timeline_respects_visibility(self) -> None:
+        names = [lane["name"] for lane in self.ok("GET", "/insights/timeline", "emp003")["projects"]]
+        self.assertEqual(names, ["Data Center Migration"])
+        self.ok("POST", f"/projects/{PORTAL}/complete", "mgr001")
+        self.assertEqual(self.ok("GET", "/insights/timeline", "mgr001")["projects"], [])
+
+    def test_capacity_grid(self) -> None:
+        grid = self.ok("GET", "/insights/capacity", "mgr001", query={"weeks": "3"})
+        self.assertEqual(grid["weeks"], ["2026-10-12", "2026-10-19", "2026-10-26"])
+        sam = next(p for p in grid["people"] if p["username"] == "emp001")
+        self.assertEqual([w["hours"] for w in sam["weeks"]], [30, 20, 0])
+        self.assertEqual(len(self.ok("GET", "/insights/capacity", "emp001")["people"]), 1)
+        self.assertEqual(len(self.ok("GET", "/insights/capacity", "adm001", query={"weeks": "x"})["weeks"]), 6)

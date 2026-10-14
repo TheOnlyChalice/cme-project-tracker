@@ -7,6 +7,9 @@ export function setFormatLocale(next) {
   locale = next;
 }
 
+/** The language currently used for dates and numbers. */
+export const getFormatLocale = () => locale;
+
 export function formatDate(value) {
   if (!value) return '—';
   const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);

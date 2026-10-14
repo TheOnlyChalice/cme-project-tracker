@@ -38,6 +38,19 @@ def register(router: Router) -> None:
         actor = current_user(request)
         return json_response(200, insights.utilization(actor, request.query.get("week")))
 
+    def timeline(request: Request) -> dict[str, Any]:
+        """Projects and milestones for the portfolio timeline."""
+        actor = current_user(request)
+        return json_response(200, {"projects": insights.portfolio_timeline(actor)})
+
+    def capacity(request: Request) -> dict[str, Any]:
+        """Booked hours per person across weeks (?start=YYYY-MM-DD&weeks=6)."""
+        actor = current_user(request)
+        return json_response(200, insights.capacity(actor, request.query.get("start"),
+                                                     request.query.get("weeks")))
+
+    router.add("GET", "/insights/timeline", timeline)
+    router.add("GET", "/insights/capacity", capacity)
     router.add("GET", "/insights/projects", overview)
     router.add("GET", "/insights/at-risk", at_risk)
     router.add("GET", "/insights/utilization", utilization)

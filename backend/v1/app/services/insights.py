@@ -3,7 +3,7 @@ Reporting that answers the business questions: project health, risk,
 resource utilization, and cost versus budget.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
@@ -284,3 +284,88 @@ def project_chain(actor: Record, project_id: str) -> list[Record]:
     """
     return milestone_chain(actor, project_id, clock.today())
 
+
+
+# [PORTFOLIO TIMELINE DATA HERE]
+# How: One call returns every project the user can see, with its dates,
+#      manager's name, risk flags, and milestones (completed ones included),
+#      each milestone marked done, in progress, planned, or overdue.
+# Why: The dashboard's timeline draws every project as a lane of milestone
+#      bars. Sending it in one response avoids a request per project, and
+#      only the manager's name is shared, so employees still can't open
+#      other people's records.
+def portfolio_timeline(actor: Record) -> list[Record]:
+    """
+    Projects and their milestones for the portfolio timeline.
+
+    Args:
+        actor: The acting user.
+
+    Returns:
+        One entry per visible active project, sorted by start date.
+    """
+    today = clock.today()
+    iso_today = today.isoformat()
+    lanes = []
+    for project in store.find("projects", lambda p: can_view_project(actor, p),
+                              where={"status": "active", "is_archived": False}):
+        manager = store.get("users", project["manager_id"]) or {}
+        health = project_health(project, actor, today)
+        milestones = sorted(store.find("milestones", where={"project_id": project["id"], "is_archived": False}),
+                            key=lambda m: m["sequence"])
+        bars = []
+        for m in milestones:
+            if m["status"] == "completed":
+                state = "done"
+            elif m["end_date"] < iso_today:
+                state = "overdue"
+            elif m["start_date"] > iso_today:
+                state = "planned"
+            else:
+                state = "in_progress"
+            bars.append({"id": m["id"], "sequence": m["sequence"], "name": m["name"],
+                         "start_date": m["start_date"], "end_date": m["end_date"], "state": state})
+        lanes.append({
+            "project_id": project["id"], "name": project["name"],
+            "start_date": project["start_date"], "end_date": project["end_date"],
+            "manager_name": f"{manager.get('first_name', '')} {manager.get('last_name', '')}".strip(),
+            "at_risk": health["at_risk"], "risk_flags": health["risk_flags"], "milestones": bars,
+        })
+    lanes.sort(key=lambda lane: (lane["start_date"], lane["name"]))
+    return lanes
+
+
+# [CAPACITY HEAT MAP DATA HERE]
+# How: Runs the weekly utilization for several weeks in a row (default 6,
+#      at most 12) and turns it into one row per person with their booked
+#      hours for each week.
+# Why: The hours heat map shows at a glance who is full, who is free, and
+#      when, across upcoming weeks. It reuses utilization(), so the same
+#      visibility rules apply: managers see their team, admins everyone,
+#      employees only themselves.
+def capacity(actor: Record, start: str | None, weeks: str | None) -> Record:
+    """
+    Booked hours per person for a run of weeks.
+
+    Args:
+        actor: The acting user.
+        start: Any date in the first week (default: the current week).
+        weeks: How many weeks (1-12, default 6).
+
+    Returns:
+        {"weeks": [...Mondays], "people": [{user_id, name, username, weeks: [{week_start, hours}]}]}.
+    """
+    try:
+        count = max(1, min(12, int(weeks or 6)))
+    except ValueError:
+        count = 6
+    first = date.fromisoformat(week_param(start))
+    mondays = [(first + timedelta(weeks=i)).isoformat() for i in range(count)]
+    people: dict[str, Record] = {}
+    for monday in mondays:
+        for row in utilization(actor, monday)["employees"]:
+            person = people.setdefault(row["user_id"], {
+                "user_id": row["user_id"], "name": row["name"], "username": row["username"], "weeks": []})
+            person["weeks"].append({"week_start": monday, "hours": row["assigned"]})
+    ordered = sorted(people.values(), key=lambda p: p["name"])
+    return {"weeks": mondays, "capacity": CAPACITY, "people": ordered}

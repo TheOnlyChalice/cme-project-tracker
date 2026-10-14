@@ -1,16 +1,16 @@
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import FolderIcon from '@mui/icons-material/Folder';
-import HistoryIcon from '@mui/icons-material/History';
-import LogoutIcon from '@mui/icons-material/Logout';
+import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined';
+import FolderIcon from '@mui/icons-material/FolderOutlined';
+import HistoryIcon from '@mui/icons-material/HistoryOutlined';
+import LogoutIcon from '@mui/icons-material/LogoutOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
-import PeopleIcon from '@mui/icons-material/People';
-import ScheduleIcon from '@mui/icons-material/Schedule';
+import PeopleIcon from '@mui/icons-material/PeopleOutline';
+import PersonIcon from '@mui/icons-material/PersonOutline';
+import ScheduleIcon from '@mui/icons-material/ScheduleOutlined';
 import {
-  AppBar, Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon,
-  ListItemText, Toolbar, Tooltip, Typography,
+  AppBar, Avatar, Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
+  Toolbar, Tooltip, Typography,
 } from '@mui/material';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -19,10 +19,11 @@ import useIsMobile from '../hooks/useIsMobile.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { hasRole } from '../utils/roles.js';
 import AppearanceControls from './AppearanceControls.jsx';
-import StatusChip from './StatusChip.jsx';
+import BrandMark from './BrandMark.jsx';
+import GlobalSearch from './GlobalSearch.jsx';
 
-const DRAWER_WIDTH = 240;
-const RAIL_WIDTH = 72;
+const DRAWER_WIDTH = 248;
+const RAIL_WIDTH = 76;
 const COLLAPSE_KEY = 'acme.sidebarCollapsed';
 
 // [ROLE-BASED NAVIGATION HERE]
@@ -38,13 +39,25 @@ const NAV_ITEMS = [
   { to: '/audit', label: 'Audit log', icon: <HistoryIcon />, role: 'admin' },
 ];
 
-// [RESPONSIVE LAYOUT HERE]
-// How: On desktops the menu is a permanent sidebar; on phones and small
-//      tablets (under 900px, via React Responsive) it becomes a slide-out
-//      drawer opened from the menu button in the top bar.
-// Why: A fixed sidebar would take up most of a phone screen. The same menu
-//      component serves both, so the two versions can never get out of sync.
-/** The signed-in app frame: top bar, navigation menu, and page area. */
+const ROLE_LABELS = { admin: 'Admin', manager: 'Manager', employee: 'Employee' };
+
+// [NAVY SIDEBAR HERE]
+// How: The sidebar is ACME navy in both light and dark mode, with the logo
+//      at the top, white menu items (the active one highlighted, its icon in
+//      amber), and a card at the bottom with the signed-in person, their
+//      role, sign-out, and the collapse arrow.
+// Why: A dark brand-colored frame around a light work area is the core of
+//      the "command center" look, and keeping identity and sign-out in one
+//      place frees the top bar for search and settings.
+
+// [COLLAPSIBLE SIDEBAR HERE]
+// How: On desktop the arrow slides the sidebar between full width and an
+//      icon-only rail; the width animates, labels fade, icons show their
+//      label as a tooltip, and the choice is remembered in the browser.
+//      Phones get a slide-out menu from the top bar's menu button instead.
+// Why: More room for the timeline and tables when wanted, with every section
+//      still one click away.
+/** The signed-in app frame: navy sidebar, top bar, and page area. */
 export default function Layout() {
   const { user, logout } = useAuth();
   const t = useT();
@@ -52,46 +65,22 @@ export default function Layout() {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-
-  // [COLLAPSIBLE SIDEBAR HERE]
-  // How: On desktop, the arrow at the bottom of the sidebar slides it between
-  //      full width (icons and labels) and a slim icon-only rail. The width
-  //      animates, labels fade, each icon shows its label as a tooltip while
-  //      collapsed, and the choice is remembered in the browser.
-  // Why: Gives pages more room when wanted while keeping one-click access to
-  //      every section. Phones keep the slide-out menu, which already hides
-  //      itself.
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === 'true');
+
+  const mini = collapsed && !isMobile;
+  const width = mini ? RAIL_WIDTH : DRAWER_WIDTH;
+  const slide = (theme) => theme.transitions.create(['width', 'opacity', 'margin'], {
+    duration: theme.transitions.duration.standard,
+    easing: theme.transitions.easing.easeInOut,
+  });
+  const fade = { opacity: mini ? 0 : 1, transition: slide, whiteSpace: 'nowrap' };
+  const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`;
+  const items = NAV_ITEMS.filter((item) => hasRole(user, item.role));
+
   const toggleCollapsed = () => {
     localStorage.setItem(COLLAPSE_KEY, String(!collapsed));
     setCollapsed(!collapsed);
   };
-  const mini = collapsed && !isMobile;
-  const width = mini ? RAIL_WIDTH : DRAWER_WIDTH;
-  const slide = (theme) => theme.transitions.create(['width', 'opacity'], {
-    duration: theme.transitions.duration.standard,
-    easing: theme.transitions.easing.easeInOut,
-  });
-  const labelSx = { opacity: mini ? 0 : 1, transition: slide, whiteSpace: 'nowrap' };
-  const navItem = (key, to, icon, label, extra = {}) => {
-    const button = (
-      <ListItemButton
-        key={key}
-        component={to ? NavLink : 'div'}
-        to={to}
-        onClick={() => setOpen(false)}
-        sx={{ mx: 1, borderRadius: 2, minHeight: 44, '&.active': { bgcolor: 'action.selected' } }}
-        {...extra}
-      >
-        <ListItemIcon sx={{ minWidth: mini ? 0 : 40, transition: slide }}>{icon}</ListItemIcon>
-        <ListItemText primary={label} sx={labelSx} />
-      </ListItemButton>
-    );
-    return mini ? <Tooltip key={key} title={label} placement="right">{button}</Tooltip> : button;
-  };
-
-  const items = NAV_ITEMS.filter((item) => hasRole(user, item.role));
-  const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`;
 
   const signOut = async () => {
     setSigningOut(true);
@@ -99,81 +88,118 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const navButton = (key, props, icon, label) => {
+    const button = (
+      <ListItemButton
+        key={key}
+        onClick={() => setOpen(false)}
+        {...props}
+        sx={{
+          mx: 1.25, mb: 0.5, borderRadius: 2.5, minHeight: 46, color: 'brand.sidebarMuted',
+          justifyContent: mini ? 'center' : 'flex-start',
+          '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', color: 'brand.sidebarText' },
+          '&.active': { bgcolor: 'brand.sidebarActive', color: 'brand.sidebarText', fontWeight: 600 },
+          '&.active .MuiListItemIcon-root': { color: 'brand.accent' },
+        }}
+      >
+        <ListItemIcon sx={{ minWidth: mini ? 0 : 38, color: 'inherit', transition: slide }}>{icon}</ListItemIcon>
+        <ListItemText primary={label} sx={{ ...fade, display: mini ? 'none' : 'block' }}
+          primaryTypographyProps={{ fontWeight: 'inherit' }} />
+      </ListItemButton>
+    );
+    return mini ? <Tooltip key={key} title={label} placement="right">{button}</Tooltip> : button;
+  };
+
   const menu = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflowX: 'hidden' }}>
-      <Toolbar>{isMobile && <Typography variant="h6" noWrap>ACME Tracker</Typography>}</Toolbar>
-      <List component="nav" aria-label={t('Main navigation')} sx={{ flexGrow: 1, pt: 1 }}>
-        {items.map((item) => navItem(item.to, item.to, item.icon, t(item.label), { end: item.end }))}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflowX: 'hidden', py: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: mini ? 0 : 2.5, pb: 3, justifyContent: mini ? 'center' : 'flex-start' }}>
+        <BrandMark size={38} />
+        <Box sx={{ ...fade, display: mini ? 'none' : 'flex', flexDirection: 'column' }}>
+          <Typography sx={{ fontFamily: (theme) => theme.typography.h6.fontFamily, fontWeight: 700, fontSize: 19, lineHeight: 1.1, color: 'brand.sidebarText' }}>ACME</Typography>
+          <Typography sx={{ fontSize: 12, color: 'brand.sidebarMuted' }}>{t('Project Tracker')}</Typography>
+        </Box>
+      </Box>
+
+      <List component="nav" aria-label={t('Main navigation')} sx={{ flexGrow: 1, py: 0 }}>
+        {items.map((item) => navButton(item.to, { component: NavLink, to: item.to, end: item.end }, item.icon, t(item.label)))}
       </List>
-      <Divider />
-      <List>
-        {navItem('profile', '/profile', <AccountCircleIcon />, t('My profile'))}
-        {navItem('signout', null, <LogoutIcon />, signingOut ? t('Signing out…') : t('Sign out'),
-          { onClick: signOut, disabled: signingOut, role: 'button' })}
+
+      <List sx={{ py: 0 }}>
+        {navButton('profile', { component: NavLink, to: '/profile' }, <PersonIcon />, t('My profile'))}
+        {navButton('signout', { onClick: signOut, disabled: signingOut }, <LogoutIcon />, signingOut ? t('Signing out…') : t('Sign out'))}
       </List>
-      {!isMobile && (
-        <>
-          <Divider />
-          <Box sx={{ display: 'flex', justifyContent: mini ? 'center' : 'flex-end', p: 1 }}>
-            <Tooltip title={mini ? t('Expand menu') : t('Collapse menu')} placement="right">
-              <IconButton onClick={toggleCollapsed} aria-label={mini ? t('Expand menu') : t('Collapse menu')}
-                aria-expanded={!mini}>
-                {mini ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </>
-      )}
+
+      <Box sx={{
+        mx: 1.25, mt: 1.5, p: mini ? 1 : 1.5, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.06)',
+        display: 'flex', alignItems: 'center', gap: 1.25, flexDirection: mini ? 'column' : 'row',
+      }}>
+        <Avatar src={user.profile_picture_url || undefined}
+          sx={{ width: 36, height: 36, fontSize: 14, fontWeight: 600, bgcolor: '#7cb8ff', color: '#081a38' }}>
+          {initials}
+        </Avatar>
+        <Box sx={{ ...fade, display: mini ? 'none' : 'flex', flexDirection: 'column', minWidth: 0, flexGrow: 1 }}>
+          <Typography noWrap sx={{ fontWeight: 600, fontSize: 14, color: 'brand.sidebarText' }}>
+            {user.first_name} {user.last_name}
+          </Typography>
+          <Typography noWrap sx={{ fontSize: 12, color: 'brand.sidebarMuted' }}>{t(ROLE_LABELS[user.role])}</Typography>
+        </Box>
+        {!isMobile && (
+          <Tooltip title={mini ? t('Expand menu') : t('Collapse menu')} placement="right">
+            <IconButton onClick={toggleCollapsed} aria-label={mini ? t('Expand menu') : t('Collapse menu')} aria-expanded={!mini}
+              sx={{ color: 'brand.sidebarText', border: 1, borderColor: 'rgba(255,255,255,0.18)', borderRadius: 2.5, width: 40, height: 40 }}>
+              {mini ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
     </Box>
   );
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100%' }}>
-      {/* [BRAND TOP BAR HERE]
-          How: The top bar is ACME dark blue with white text in both modes, and
-               its controls switch to white so they stay readable on it.
-          Why: A solid brand-colored header ties the app to ACME's dark blue
-               and white identity whichever mode is chosen. */}
-      <AppBar position="fixed" elevation={0}
-        sx={{ bgcolor: 'brand.bar', color: '#ffffff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar sx={{ gap: 1 }}>
-          {isMobile && (
-            <IconButton edge="start" color="inherit" aria-label={t('Open menu')} onClick={() => setOpen(true)}>
-              <MenuIcon />
-            </IconButton>
-          )}
-          <Typography variant="h6" sx={{ flexGrow: 1 }} noWrap>
-            {isMobile ? 'ACME' : 'ACME Project Tracker'}
-          </Typography>
-          <AppearanceControls inverse />
-          {!isMobile && <StatusChip value={user.role} inverse />}
-          <Tooltip title={`${user.first_name} ${user.last_name} (${user.username})`}>
-            <Avatar
-              src={user.profile_picture_url || undefined}
-              sx={{ ml: 1, width: 34, height: 34, bgcolor: 'secondary.main', color: 'secondary.contrastText', cursor: 'pointer' }}
-              onClick={() => navigate('/profile')}
-            >
-              {initials}
-            </Avatar>
-          </Tooltip>
-        </Toolbar>
-      </AppBar>
-
       <Box component="nav" sx={{ width: { md: width }, flexShrink: { md: 0 }, transition: slide }}>
         <Drawer
           variant={isMobile ? 'temporary' : 'permanent'}
           open={isMobile ? open : true}
           onClose={() => setOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ '& .MuiDrawer-paper': { width: isMobile ? DRAWER_WIDTH : width, boxSizing: 'border-box', transition: slide, overflowX: 'hidden' } }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: isMobile ? DRAWER_WIDTH : width, boxSizing: 'border-box', transition: slide,
+              overflowX: 'hidden', bgcolor: 'brand.sidebar', color: 'brand.sidebarText', borderRight: 'none',
+            },
+          }}
         >
           {menu}
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 3 } }}>
-        <Toolbar />
-        <Outlet />
+      <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <AppBar position="sticky" color="inherit" elevation={0}
+          sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
+          <Toolbar sx={{ gap: 1.5, flexWrap: 'wrap', py: 1, px: { xs: 2, md: 4 } }}>
+            {isMobile && (
+              <IconButton edge="start" aria-label={t('Open menu')} onClick={() => setOpen(true)}>
+                <MenuIcon />
+              </IconButton>
+            )}
+            {isMobile ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
+                <BrandMark size={28} />
+                <Typography variant="h6" noWrap>ACME</Typography>
+              </Box>
+            ) : (
+              <>
+                <GlobalSearch />
+                <Box sx={{ flexGrow: 1 }} />
+              </>
+            )}
+            <AppearanceControls />
+          </Toolbar>
+        </AppBar>
+        <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, maxWidth: 1320, width: '100%', boxSizing: 'border-box' }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

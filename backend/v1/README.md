@@ -198,6 +198,8 @@ All paths are under `/api/v1`. Errors always look like
 | GET | `/insights/projects?at_risk=&include_closed=` | any user (filtered by role) |
 | GET | `/insights/at-risk` | any user (filtered by role) |
 | GET | `/insights/utilization?week=` | any user (filtered by role) |
+| GET | `/insights/timeline` | any user (filtered by role) |
+| GET | `/insights/capacity?start=&weeks=` | any user (filtered by role) |
 | POST | `/admin/maintenance` | admin |
 | GET | `/audit-log?actor_id=&action=&entity_type=&entity_id=&from=&to=&limit=&offset=` | admin |
 

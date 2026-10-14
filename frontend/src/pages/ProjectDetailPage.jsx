@@ -21,6 +21,7 @@ import ProjectDialog from '../components/forms/ProjectDialog.jsx';
 import Loading from '../components/Loading.jsx';
 import { useNotify } from '../components/NotifyContext.js';
 import PageHeader from '../components/PageHeader.jsx';
+import PortfolioTimeline from '../components/PortfolioTimeline.jsx';
 import ProgressCell from '../components/ProgressCell.jsx';
 import RiskFlags from '../components/RiskFlags.jsx';
 import StatCard from '../components/StatCard.jsx';
@@ -176,6 +177,37 @@ export default function ProjectDetailPage() {
           </CardContent></Card>
         ) : <StatCard label={t('Last activity')} value={formatDate(health.last_activity_at)} />}
       </Box>
+
+      {/* [PROJECT TIMELINE HERE]
+          How: The same timeline as the dashboard, with one lane for this
+               project, so its milestones show as bars against today.
+          Why: Shows the milestone chain and any overdue step at a glance,
+               and the bars visibly move when dates are shifted. */}
+      {milestones.some((m) => !m.is_archived) && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <PortfolioTimeline
+              title={t('Timeline')}
+              linkLanes={false}
+              lanes={[{
+                id: project.id,
+                name: project.name,
+                start: project.start_date,
+                end: project.end_date,
+                bars: milestones.filter((m) => !m.is_archived).map((m) => {
+                  const link = chainById[m.id] || {};
+                  const todayIso = new Date().toISOString().slice(0, 10);
+                  let state = 'in_progress';
+                  if (m.status === 'completed') state = 'done';
+                  else if (link.overdue) state = 'overdue';
+                  else if (m.start_date > todayIso) state = 'planned';
+                  return { id: m.id, label: `${m.sequence}. ${m.name}`, start: m.start_date, end: m.end_date, state, current: project.active_milestone_id === m.id };
+                }),
+              }]}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* [MILESTONE CHAIN VIEW HERE]
           How: Milestones are listed in sequence order, each marked blocked

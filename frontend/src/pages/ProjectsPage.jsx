@@ -5,8 +5,8 @@ import {
   Box, Button, Card, CardActionArea, CardContent, FormControlLabel, InputAdornment, MenuItem, Paper,
   Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -40,12 +40,18 @@ export default function ProjectsPage() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const notify = useNotify();
-  const [search, setSearch] = useState('');
+  // The top bar's search box sends people here with ?search=...
+  const [params] = useSearchParams();
+  const [search, setSearch] = useState(() => params.get('search') || '');
   const [status, setStatus] = useState(admin ? '' : 'active');
   const [archived, setArchived] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sweeping, setSweeping] = useState(false);
   const query = useDebouncedValue(search);
+  const searched = params.get('search');
+  useEffect(() => {
+    if (searched !== null) setSearch(searched);
+  }, [searched]);
 
   const { data, loading, error, reload } = useLoader(async () => {
     const [projects, users] = await Promise.all([

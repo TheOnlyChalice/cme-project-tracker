@@ -4,6 +4,23 @@ React 19 + Vite app using **Material UI** components and **React Responsive**
 for layout changes on small screens. It talks to the Python API in
 `backend/v1` using JWT sign-in.
 
+## Design: "navy command center"
+
+ACME navy and white with a single amber accent (used only for "look here":
+today, the current item, risk, key actions), Space Grotesk headings over IBM
+Plex Sans body text, a navy sidebar with the ACME mark, and a white work area.
+
+- **Dashboard:** a navy welcome banner with four headline numbers, the
+  **portfolio timeline** (every project as a lane of milestone bars against an
+  amber "today" line, Months / Quarters zoom), "Needs attention" with each
+  risk's reason, this week's capacity, and the project health table.
+- **Hours:** a **capacity heat map** (people by week, shaded by how full each
+  40-hour week is; click a week to see and edit its bookings). Employees see
+  their own six-week strip.
+- **Project page:** the same timeline for the project's own milestones.
+- **Login:** split screen with the brand panel beside the sign-in card.
+- **Top bar:** project search (Ctrl+K), language, and light/dark mode.
+
 ## Features
 
 - **Light and dark mode:** ACME dark blue and white in both; follows the
