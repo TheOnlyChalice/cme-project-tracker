@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { useT } from '../../i18n/LanguageContext.js';
 import { formatDate, formatHours } from '../../utils/format.js';
 
-// [CAPACITY BARS HERE]
+// [ACME: CAPACITY BARS HERE]
 // How: One stacked bar per week (MUI X Charts): booked hours in navy, free
 //      hours in a light shade, for everyone currently shown in the heat map.
 //      Clicking a week's bar selects that week, just like the heat map.

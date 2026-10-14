@@ -50,7 +50,7 @@ def _top(rows: list[tuple[int, str, Record]]) -> tuple[list[Record], int]:
     return [row[2] for row in rows[:PER_GROUP]], len(rows)
 
 
-# [QUICK SEARCH HERE]
+# [ACME: QUICK SEARCH HERE]
 # How: One query searches three things at once and returns the best few of
 #      each: projects (name, description), milestones (name, goal,
 #      deliverables), and people (name, username, email, job title). Matches

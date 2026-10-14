@@ -1,6 +1,6 @@
 import { clearSession, loadSession, saveSession } from './session.js';
 
-// [API BASE URL HERE]
+// [ACME: API BASE URL HERE]
 // How: VITE_API_URL comes from frontend/.env.local locally, and from
 //      ./bin/deploy-frontend.sh (your CloudFront address) when deployed.
 // Why: The same code talks to the local Python dev server or to Lambda
@@ -18,7 +18,7 @@ export class ApiError extends Error {
 
 let onSessionEnded = () => {};
 
-// [REQUEST ACTIVITY TRACKER HERE]
+// [ACME: REQUEST ACTIVITY TRACKER HERE]
 // How: Counts requests that are still waiting for an answer and tells any
 //      listener when the count changes.
 // Why: Powers the progress bar at the top of the screen, so there is always
@@ -48,7 +48,7 @@ export function setSessionEndedHandler(handler) {
 
 async function parse(response) {
   const type = response.headers.get('content-type') || '';
-  // [CLOUDFRONT 404 GUARD HERE]
+  // [ACME: CLOUDFRONT 404 GUARD HERE]
   // How: Anything that isn't JSON is treated as "not found".
   // Why: CloudFront is set up to answer every 404 with the website's
   //      index.html (so page links work), and that includes 404s from the API.
@@ -74,7 +74,7 @@ async function parse(response) {
 
 let refreshing = null;
 
-// [TOKEN REFRESH FLOW HERE]
+// [ACME: TOKEN REFRESH FLOW HERE]
 // How: When a request fails with "token_expired", the refresh token is traded
 //      for a new pair, saved, and the original request is retried once. If
 //      several requests expire at the same moment, they share one refresh.
@@ -112,7 +112,7 @@ export async function api(path, { method = 'GET', body, query, auth = true } = {
     if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
   });
 
-  // [AUTH HEADER HERE]
+  // [ACME: AUTH HEADER HERE]
   // How: Every request automatically carries "Authorization: Bearer <token>".
   // Why: Pages never handle tokens themselves, so no page can forget to sign
   //      its requests.
@@ -152,7 +152,7 @@ export async function api(path, { method = 'GET', body, query, auth = true } = {
       clearSession();
       onSessionEnded(error);
     }
-    // [COLD START RETRY HERE]
+    // [ACME: COLD START RETRY HERE]
     // How: A 503 "storage_unavailable" is retried once after a short pause.
     // Why: The first request after Aurora has been idle can time out while
     //      the database wakes up; one quiet retry hides that from the user.

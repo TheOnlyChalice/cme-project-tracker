@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
       'content-type': headers['content-type'] || 'application/json',
       'user-agent': headers['user-agent'] || 'proxy-server',
       'host': target.host,
-      // [PROXY AUTH HEADER HERE]
+      // [ACME: PROXY AUTH HEADER HERE]
       // How: Pass the browser's Authorization header (the JWT) through to Lambda.
       // Why: This proxy only forwarded a few headers, so sign-in tokens were
       //      silently dropped in the LocalStack setup and every request

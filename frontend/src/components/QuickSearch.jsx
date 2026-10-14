@@ -35,7 +35,7 @@ Highlight.propTypes = {
   query: PropTypes.string.isRequired,
 };
 
-// [QUICK SEARCH BOX HERE]
+// [ACME: QUICK SEARCH BOX HERE]
 // How: As you type (after 2 letters, with a short pause), the box asks the
 //      backend's /search and shows a dropdown grouped into Projects,
 //      Milestones, and People, with the matching letters in bold. Arrow keys

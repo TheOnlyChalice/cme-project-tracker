@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 WEEKLY_CAPACITY_HOURS = 40
 
 
-# [COMPANY TIME ZONE HERE]
+# [ACME: COMPANY TIME ZONE HERE]
 # How: The week resets at 12:00 AM Monday in the zone named by the
 #      COMPANY_TIMEZONE environment variable (default America/New_York).
 #      If the zone can't be loaded, it falls back to UTC and logs a warning.
@@ -51,7 +51,7 @@ def today() -> date:
     return datetime.now(COMPANY_ZONE).date()
 
 
-# [WEEK START HERE]
+# [ACME: WEEK START HERE]
 # How: Any date is mapped back to the Monday of its week (Monday = weekday 0).
 # Why: Hour assignments belong to a week, and every employee's 40 hours start
 #      fresh at 12:00 AM Monday, so the Monday date identifies the week.

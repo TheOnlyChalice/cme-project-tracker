@@ -12,7 +12,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectDetailPage from './pages/ProjectDetailPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 
-// [ROUTES HERE]
+// [ACME: ROUTES HERE]
 // How: The login page is public; everything else sits behind RequireAuth
 //      inside the shared Layout. People needs manager or above, and the
 //      audit log needs admin.

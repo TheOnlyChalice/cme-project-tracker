@@ -1,4 +1,4 @@
-// [SESSION STORAGE HERE]
+// [ACME: SESSION STORAGE HERE]
 // How: The access token, refresh token, and signed-in user are saved together
 //      in the browser's localStorage under one key.
 // Why: Keeps people signed in when they refresh the page or come back later

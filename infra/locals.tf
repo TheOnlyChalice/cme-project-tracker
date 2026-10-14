@@ -100,7 +100,7 @@ locals {
     APP_NAME      = format("%s-%s", var.aws_project, local.app_id)
     APP_ROLE      = format("arn:%s:iam::%s:role/%s-assume-%s-%s", data.aws_partition.this.partition, data.aws_caller_identity.this.account_id, var.aws_project, data.aws_region.this.region, local.app_id)
     APP_REGION    = data.aws_region.this.region
-    # [JWT SECRET ENV HERE]
+    # [ACME: JWT SECRET ENV HERE]
     # How: Hands the random secret from jwt.tf to every Lambda as JWT_SECRET.
     # Why: All Lambda copies must sign and check tokens with the same secret.
     JWT_SECRET    = random_password.jwt_secret.result

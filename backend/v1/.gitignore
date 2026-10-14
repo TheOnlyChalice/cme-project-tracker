@@ -1,4 +1,4 @@
-# [GITIGNORE WHITELIST HERE]
+# [ACME: GITIGNORE WHITELIST HERE]
 # How: Ignore everything in this folder, then re-include only our own files.
 # Why: bin/start-dev.sh pip-installs dependencies directly into each service
 #      folder. Without this, hundreds of library files would be committed and

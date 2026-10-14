@@ -69,7 +69,7 @@ RangeControls.propTypes = {
   onChange: PropTypes.func.isRequired,
 };
 
-// [MY WEEK HERE]
+// [ACME: MY WEEK HERE]
 // How: Employees see a strip of their own next six weeks (shaded like the
 //      team heat map), then the selected week's bookings: project, milestone,
 //      and hours.
@@ -136,7 +136,7 @@ MyWeek.propTypes = {
   user: PropTypes.object.isRequired,
 };
 
-// [TEAM PLANNER HERE]
+// [ACME: TEAM PLANNER HERE]
 // How: Managers (and admins) see the capacity heat map for six weeks, then
 //      the bookings for the selected week (click a heat map cell or use the
 //      week arrows), and can add, change, or remove hours on projects they
@@ -167,7 +167,7 @@ function TeamPlanner({ user }) {
     return { projects: projects.projects, employees: users.users, managers: managerList.users, milestones };
   }, []);
 
-  // [HEAT MAP FILTERS AND PAGING HERE]
+  // [ACME: HEAT MAP FILTERS AND PAGING HERE]
   // How: Above the heat map, a name search and (for admins) a manager filter
   //      narrow the rows; the map then shows 15 people per page, and the
   //      bookings table below shows 15 bookings per page.

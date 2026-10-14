@@ -27,7 +27,7 @@ const CATEGORY_LABELS = { on_track: 'On track', at_risk: 'At risk', inactive: 'I
 
 const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-// [CLICKABLE BANNER NUMBERS HERE]
+// [ACME: CLICKABLE BANNER NUMBERS HERE]
 // How: Each headline number in the banner is a button: "Active projects"
 //      opens the project list, "At risk" filters the timeline to at-risk
 //      projects and scrolls to it, the hours figure opens the Hours page, and
@@ -59,7 +59,7 @@ BannerStat.propTypes = {
   onClick: PropTypes.func,
 };
 
-// [DASHBOARD HERE]
+// [ACME: DASHBOARD HERE]
 // How: A navy banner with clickable headline numbers; a status donut beside
 //      "Needs attention"; the portfolio timeline (filtered by the donut,
 //      bars open their milestone); this week's capacity beside the
@@ -84,7 +84,7 @@ export default function DashboardPage() {
     return { projects: health.projects, timeline: timeline.projects, people };
   }, [user.id, manager]);
 
-  // [DASHBOARD PAGING HERE]
+  // [ACME: DASHBOARD PAGING HERE]
   // How: The timeline shows 8 projects per page, "Needs attention" 5, team
   //      capacity 10, milestones due 5, and project health 10. Small lists
   //      show no page controls.
@@ -153,7 +153,7 @@ export default function DashboardPage() {
 
   return (
     <Stack spacing={3}>
-      {/* [WELCOME BANNER HERE]
+      {/* [ACME: WELCOME BANNER HERE]
           How: A solid navy panel with today's date, a time-of-day greeting,
                an amber shortcut to the at-risk list, and four clickable numbers.
           Why: The first thing anyone sees sums up the state of their world
@@ -252,7 +252,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* [MILESTONES DUE SOON HERE]
+        {/* [ACME: MILESTONES DUE SOON HERE]
             How: Lists open milestones ending in the next 30 days, soonest
                  first, with their project and due date; each opens its milestone.
             Why: The banner's "Milestones due" number needs a place to land,

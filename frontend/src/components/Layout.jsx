@@ -28,7 +28,7 @@ const DRAWER_WIDTH = 248;
 const RAIL_WIDTH = 76;
 const COLLAPSE_KEY = 'acme.sidebarCollapsed';
 
-// [ROLE-BASED NAVIGATION HERE]
+// [ACME: ROLE-BASED NAVIGATION HERE]
 // How: Each menu item lists the lowest role that can use it, and the menu
 //      only shows items the signed-in user's role allows.
 // Why: Employees never see admin-only pages like the audit log, which keeps
@@ -43,7 +43,7 @@ const NAV_ITEMS = [
 
 const ROLE_LABELS = { admin: 'Admin', manager: 'Manager', employee: 'Employee' };
 
-// [NAVY SIDEBAR HERE]
+// [ACME: NAVY SIDEBAR HERE]
 // How: The sidebar is ACME navy in both light and dark mode, with the logo
 //      at the top, white menu items (the active one highlighted, its icon in
 //      amber), and a card at the bottom with the signed-in person, their
@@ -52,7 +52,7 @@ const ROLE_LABELS = { admin: 'Admin', manager: 'Manager', employee: 'Employee' }
 //      the "command center" look, and keeping identity and sign-out in one
 //      place frees the top bar for search and settings.
 
-// [COLLAPSIBLE SIDEBAR HERE]
+// [ACME: COLLAPSIBLE SIDEBAR HERE]
 // How: On desktop the arrow slides the sidebar between full width and an
 //      icon-only rail; the width animates, labels fade, icons show their
 //      label as a tooltip, and the choice is remembered in the browser.

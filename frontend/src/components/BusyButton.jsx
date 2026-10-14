@@ -1,7 +1,7 @@
 import { Button, CircularProgress } from '@mui/material';
 import PropTypes from 'prop-types';
 
-// [BUSY BUTTON HERE]
+// [ACME: BUSY BUTTON HERE]
 // How: A normal button that, while its action runs, shows a small spinner,
 //      switches to a "working" label, and can't be clicked again.
 // Why: Shows exactly which action is processing and stops double-clicks

@@ -18,7 +18,7 @@ from app.store import store
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# [ROUTE REGISTRATION HERE]
+# [ACME: ROUTE REGISTRATION HERE]
 # How: Every domain module registers its routes once, when Lambda loads this file.
 # Why: Lambda reuses the loaded module across requests in a warm container, so
 #      routes are built once instead of on every request.
@@ -27,7 +27,7 @@ register_all_routes(router)
 _ready = False
 
 
-# [STARTUP BOOTSTRAP HERE]
+# [ACME: STARTUP BOOTSTRAP HERE]
 # How: The first request a Lambda copy handles creates any missing tables and
 #      adds the starter data if the database is empty. If the database can't be
 #      reached, the request gets a 503 and the next request tries again.

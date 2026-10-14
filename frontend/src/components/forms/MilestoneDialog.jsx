@@ -18,7 +18,7 @@ function toForm(milestone) {
   };
 }
 
-// [MILESTONE FORM HERE]
+// [ACME: MILESTONE FORM HERE]
 // How: Creates or edits a milestone. Deliverables are typed one per line and
 //      sent as a list; when editing, only changed fields are sent.
 // Why: One-per-line is the quickest way to enter a short checklist, and the

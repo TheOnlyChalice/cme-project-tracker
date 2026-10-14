@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useT } from '../../i18n/LanguageContext.js';
 import { formatDate } from '../../utils/format.js';
 
-// [SHIFT OPTIONS HERE]
+// [ACME: SHIFT OPTIONS HERE]
 // How: Shown in the milestone and project forms when a date change could
 //      move other milestones. One checkbox (ticked by default) moves them,
 //      with a preview of their new dates; a second checkbox appears only if

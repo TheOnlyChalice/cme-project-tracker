@@ -6,7 +6,7 @@ import hmac
 import re
 import secrets
 
-# [PASSWORD HASHING HERE]
+# [ACME: PASSWORD HASHING HERE]
 # How: PBKDF2-HMAC-SHA256 from Python's standard library, with a random
 #      16-byte salt per password. The stored value records the algorithm,
 #      iteration count, salt, and hash: "pbkdf2_sha256$310000$<salt>$<hash>".
@@ -75,7 +75,7 @@ def verify_password(password: str, stored: str) -> bool:
             return False
         digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"),
                                      base64.b64decode(salt_b64), int(iterations))
-        # [CONSTANT-TIME COMPARE HERE]
+        # [ACME: CONSTANT-TIME COMPARE HERE]
         # How: hmac.compare_digest compares the hashes.
         # Why: A normal == stops at the first different byte, and that timing
         #      difference can leak information to an attacker.

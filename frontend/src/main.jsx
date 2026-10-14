@@ -10,14 +10,14 @@ import LanguageProvider from './i18n/LanguageProvider.jsx';
 import './index.css';
 import ColorModeProvider from './theme/ColorModeProvider.jsx';
 
-// [HASH ROUTER HERE]
+// [ACME: HASH ROUTER HERE]
 // How: Page addresses use a # (e.g. /#/projects/123) via HashRouter.
 // Why: The site is served from S3 behind CloudFront. With normal addresses,
 //      refreshing /projects/123 would ask S3 for a file that doesn't exist and
 //      fail; with a #, the browser always loads index.html and React picks
 //      the page. No server or CloudFront changes are needed.
 
-// [PROVIDER ORDER HERE]
+// [ACME: PROVIDER ORDER HERE]
 // How: Language is outermost, then light/dark theme, the error boundary, the
 //      loading bar, routing, messages, and sign-in.
 // Why: Each layer can use the ones outside it: the error screen is translated

@@ -38,7 +38,7 @@ export function formatHours(value) {
 
 export const fullName = (user) => (user ? `${user.first_name} ${user.last_name}` : '—');
 
-// [WEEK HELPERS HERE]
+// [ACME: WEEK HELPERS HERE]
 // How: Weeks are identified by their Monday as a YYYY-MM-DD string, matching
 //      the backend's week_start.
 // Why: Hours reset every Monday, so the week picker and every hours request

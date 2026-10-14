@@ -13,7 +13,7 @@ function initialLanguage() {
   return navigator.language?.toLowerCase().startsWith('es') ? 'es' : 'en';
 }
 
-// [LANGUAGE PROVIDER HERE]
+// [ACME: LANGUAGE PROVIDER HERE]
 // How: Holds the chosen language (English or Spanish), remembers it in the
 //      browser, starts in Spanish if the browser is set to Spanish, and
 //      updates the page's lang attribute and the date/number format.

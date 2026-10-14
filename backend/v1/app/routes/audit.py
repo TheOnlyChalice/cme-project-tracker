@@ -18,7 +18,7 @@ def register(router: Router) -> None:
         router: The router to register routes on.
     """
 
-    # [AUDIT VIEW HERE]
+    # [ACME: AUDIT VIEW HERE]
     # How: GET /audit-log returns entries newest first with filters and paging.
     #      Admins only, and there are deliberately no routes to change or
     #      remove entries.

@@ -25,7 +25,7 @@ INACTIVITY_ARCHIVE_DAYS = int(os.getenv("INACTIVITY_ARCHIVE_DAYS", "14"))
 INACTIVITY_WARNING_DAYS = int(os.getenv("INACTIVITY_WARNING_DAYS", "10"))
 
 
-# [PROJECT ACTIVITY HERE]
+# [ACME: PROJECT ACTIVITY HERE]
 # How: A project's last activity is the most recent change to the project
 #      itself, any of its milestones, or any hours booked on it, using the
 #      created_at/updated_at timestamps every record already has.
@@ -83,7 +83,7 @@ def days_inactive(project: Record, today: date) -> int | None:
     return max((today - last_day).days, 0)
 
 
-# [INACTIVE CLEAN-UP HERE]
+# [ACME: INACTIVE CLEAN-UP HERE]
 # How: Only when an admin runs it (POST /admin/maintenance), every active,
 #      unarchived project idle for 14+ days (and with no hours booked from
 #      this week on) is archived, each with an "archive" audit entry under

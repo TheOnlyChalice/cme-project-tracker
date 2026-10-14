@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { pendingRequests, subscribeToActivity } from '../api/client.js';
 import { useT } from '../i18n/LanguageContext.js';
 
-// [GLOBAL LOADING BAR HERE]
+// [ACME: GLOBAL LOADING BAR HERE]
 // How: A thin animated bar across the very top of the screen appears whenever
 //      any request is in flight, and disappears when all have finished.
 // Why: Your "loading icon whenever something is processing" requirement. It

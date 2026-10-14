@@ -10,7 +10,7 @@ Record = dict[str, Any]
 AUDIT_ACTIONS = ("create", "update", "archive", "restore",
                  "assign_role", "assign_team", "complete", "abandon")
 
-# [AUDIT REDACTION HERE]
+# [ACME: AUDIT REDACTION HERE]
 # How: Listed fields are replaced with "[changed]" in audit entries.
 # Why: The audit log must never hold password hashes. It still records that a
 #      password changed, which is the part admins need.
@@ -45,7 +45,7 @@ def _diff(before: Record | None, after: Record | None) -> dict[str, dict[str, An
     return changes
 
 
-# [AUDIT LOG HERE]
+# [ACME: AUDIT LOG HERE]
 # How: Every service function that changes data calls record_audit() with the
 #      acting user, the action, and the record before and after. Only the
 #      changed fields are stored, and entries are written to an append-only
@@ -127,7 +127,7 @@ def _filtered(filters: dict[str, str], allowed: Any) -> dict[str, Any]:
             "entries": entries[offset:offset + limit]}
 
 
-# [GENERAL AUDIT LOG HERE]
+# [ACME: GENERAL AUDIT LOG HERE]
 # How: The audit log in the sidebar lists every change EXCEPT those about
 #      projects, milestones, and booked hours: account creation, profile and
 #      password changes, role and manager changes, archiving and restoring
@@ -148,7 +148,7 @@ def list_audit(filters: dict[str, str]) -> dict[str, Any]:
     return _filtered(filters, lambda e: e["entity_type"] not in PROJECT_ENTITY_TYPES)
 
 
-# [PROJECT AUDIT LOG HERE]
+# [ACME: PROJECT AUDIT LOG HERE]
 # How: Each project's audit log collects entries about the project itself,
 #      any of its milestones (archived ones included), and any hours booked
 #      on it (removed ones included). Which project an entry belongs to is

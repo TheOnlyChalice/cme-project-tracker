@@ -8,7 +8,7 @@ import buildTheme from './theme.js';
 
 const KEY = 'acme.colorMode';
 
-// [DARK MODE HERE]
+// [ACME: DARK MODE HERE]
 // How: Until someone picks a mode, the app follows the computer's own light or
 //      dark setting (read with React Responsive's media query). Using the
 //      toggle saves the choice in the browser, and the theme is rebuilt for

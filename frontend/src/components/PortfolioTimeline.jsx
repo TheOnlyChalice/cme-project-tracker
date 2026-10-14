@@ -33,7 +33,7 @@ function barSx(state) {
   return { ...base, bgcolor: 'background.paper', color: 'text.primary', borderColor: 'brand.barPlannedBorder' };
 }
 
-// [PORTFOLIO TIMELINE HERE]
+// [ACME: PORTFOLIO TIMELINE HERE]
 // How: Draws each project as a horizontal lane with its milestones as bars
 //      across the months: completed (muted), in progress (solid), planned
 //      (outlined), and overdue (amber with stripes). An amber line marks
@@ -144,7 +144,7 @@ export default function PortfolioTimeline({ lanes, title, actions, linkLanes = t
                   if (right <= 0 || left >= 100) return null;
                   return (
                     <Tooltip key={bar.id} title={`${bar.label} · ${formatDate(bar.start)} – ${formatDate(bar.end)} · ${t(STATE_LABELS[bar.state])}`}>
-                      {/* [CLICKABLE TIMELINE BARS HERE]
+                      {/* [ACME: CLICKABLE TIMELINE BARS HERE]
                           How: Each bar is a button: clicking it (or Enter) opens
                                that milestone on its project page.
                           Why: Seeing a slipping milestone and getting to it should

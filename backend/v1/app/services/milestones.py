@@ -33,7 +33,7 @@ def serialize_milestone(milestone: Record) -> Record:
     Returns:
         The milestone plus the employees who have hours on it.
     """
-    # [MILESTONE ASSIGNEES HERE]
+    # [ACME: MILESTONE ASSIGNEES HERE]
     # How: Worked out from the milestone's active hour bookings across every
     #      week: the list of people (name and total hours, most hours first)
     #      plus their IDs.
@@ -103,7 +103,7 @@ def get_managed_milestone(actor: Record, milestone_id: str) -> tuple[Record, Rec
     return milestone, project
 
 
-# [MILESTONE DATE RULES HERE]
+# [ACME: MILESTONE DATE RULES HERE]
 # How: A milestone's end date can't be before its start date, both must sit
 #      inside the project's dates, and an edit can't shrink a milestone so
 #      that existing hour assignments fall in weeks it no longer covers.
@@ -191,7 +191,7 @@ def create_milestone(actor: Record, project_id: str, data: Any) -> Record:
     check.raise_if_errors()
     _check_dates(project, check.cleaned["start_date"], check.cleaned["end_date"])
 
-    # [MILESTONE SEQUENCE HERE]
+    # [ACME: MILESTONE SEQUENCE HERE]
     # How: Each new milestone gets the next number in its project (1, 2, 3...),
     #      counting archived milestones so numbers are never reused.
     # Why: The data model asks for a sequential ID per milestone, and the
@@ -219,7 +219,7 @@ def create_milestone(actor: Record, project_id: str, data: Any) -> Record:
     store.insert(TABLE, milestone)
     record_audit(actor, "create", "milestone", milestone["id"], None, milestone)
 
-    # [FIRST ACTIVE MILESTONE HERE]
+    # [ACME: FIRST ACTIVE MILESTONE HERE]
     # How: If the project has no active milestone yet, the new one becomes it.
     # Why: Saves managers a step and means the project always shows what is
     #      currently being worked on once any milestone exists.
@@ -265,7 +265,7 @@ def update_milestone(actor: Record, milestone_id: str, data: Any) -> Record:
         raise ApiError(400, "validation_error", "Some fields are invalid.",
                        {"end_date": "Can't be before the start date."})
 
-    # [MILESTONE DATE CASCADE HERE]
+    # [ACME: MILESTONE DATE CASCADE HERE]
     # How: If the end date moves and "shift_following" is ticked, every later
     #      open milestone (higher sequence, not completed or archived) moves by
     #      the same number of days, start and end. With "extend_project"
@@ -300,7 +300,7 @@ def update_milestone(actor: Record, milestone_id: str, data: Any) -> Record:
             "project_end_date": new_project_end}
 
 
-# [ACTIVE MILESTONE ADVANCE HERE]
+# [ACME: ACTIVE MILESTONE ADVANCE HERE]
 # How: When the project's active milestone is completed or archived, the next
 #      active milestone in sequence order becomes the active one (or none).
 # Why: Keeps the project's "current milestone" accurate without the manager
@@ -347,7 +347,7 @@ def complete_milestone(actor: Record, milestone_id: str) -> Record:
     release_future_assignments(actor, lambda a: a["milestone_id"] == milestone["id"])
     _advance_active_milestone(actor, project["id"], milestone["id"])
 
-    # [AUTO-COMPLETE PROJECT HERE]
+    # [ACME: AUTO-COMPLETE PROJECT HERE]
     # How: When the last open milestone of a project is completed, the project
     #      itself is completed and archived in the same step, with its own
     #      "complete" audit entry under the same person. The response says
@@ -377,7 +377,7 @@ def archive_milestone(actor: Record, milestone_id: str) -> Record:
     Returns:
         The updated milestone, serialized.
     """
-    # [ADMIN-ONLY MILESTONE ARCHIVE HERE]
+    # [ACME: ADMIN-ONLY MILESTONE ARCHIVE HERE]
     # How: Only admins may archive a milestone; managers complete them instead.
     # Why: Your rule: archiving (deleting) is an admin action for every kind
     #      of item, so managers can finish work but not remove it.
@@ -414,7 +414,7 @@ def restore_milestone(actor: Record, milestone_id: str) -> Record:
     return serialize_milestone(updated)
 
 
-# [MILESTONE CHAIN HERE]
+# [ACME: MILESTONE CHAIN HERE]
 # How: Milestones are listed in sequence order; each depends on the one
 #      before it. A milestone is "blocked" if any earlier milestone is still
 #      active, and "overdue" if it's active past its end date.

@@ -18,7 +18,7 @@ def register(router: Router) -> None:
         router: The router to register routes on.
     """
 
-    # [RUN MAINTENANCE NOW HERE]
+    # [ACME: RUN MAINTENANCE NOW HERE]
     # How: POST /admin/maintenance runs the inactivity archive immediately and
     #      lists what it archived. The admin is recorded as the actor.
     # Why: Lets admins (and demos) apply the two-week rule right away instead

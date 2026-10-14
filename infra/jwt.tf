@@ -1,4 +1,4 @@
-# [JWT SECRET HERE]
+# [ACME: JWT SECRET HERE]
 # How: Terraform generates a random 64-character secret once and keeps it in
 #      the Terraform state; locals.tf passes it to Lambda as JWT_SECRET.
 # Why: Sign-in tokens are signed with this secret, so it must be long, random,

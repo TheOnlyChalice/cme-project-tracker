@@ -26,7 +26,7 @@ import { formatDate, formatHours, fullName } from '../utils/format.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { isAdmin } from '../utils/roles.js';
 
-// [PROJECT LIST HERE]
+// [ACME: PROJECT LIST HERE]
 // How: Lists the projects the backend says this user may see, with search,
 //      a status filter, and (for admins) an "include archived" switch. The
 //      filters are sent to the API, which applies them after its own
@@ -64,7 +64,7 @@ export default function ProjectsPage() {
   }, [query, status, archived]);
 
   const people = Object.fromEntries((data?.users || []).map((u) => [u.id, u]));
-  // [PROJECT LIST PAGING HERE]
+  // [ACME: PROJECT LIST PAGING HERE]
   // How: 10 projects per page by default (10, 25, or 50), after filters.
   // Why: Admins see 30+ projects with the full data set.
   const pager = usePagination(data?.projects, 10);
@@ -148,7 +148,7 @@ export default function ProjectsPage() {
                   key={p.id}
                   hover
                   sx={{ cursor: 'pointer' }}
-                  // [ROW CLICK VS TEXT SELECT HERE]
+                  // [ACME: ROW CLICK VS TEXT SELECT HERE]
                   // How: Clicking a row opens the project, unless the user just
                   //      selected some text in it.
                   // Why: Lets people copy names and descriptions from the table
@@ -181,7 +181,7 @@ export default function ProjectsPage() {
       ))}
 
       {data && <Paginator pager={pager} label="Projects per page:" />}
-      {/* [ARCHIVE INACTIVE BUTTON HERE]
+      {/* [ACME: ARCHIVE INACTIVE BUTTON HERE]
           How: Admins can archive every project with no activity for 14 days
                (and no upcoming hours) in one step, after confirming; the
                result says how many were archived.

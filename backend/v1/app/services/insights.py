@@ -16,7 +16,7 @@ from app.store import store
 
 Record = dict[str, Any]
 
-# [RISK THRESHOLDS HERE]
+# [ACME: RISK THRESHOLDS HERE]
 # How: The numbers that decide when a project is flagged live in one place.
 # Why: "At risk" isn't defined in the requirements, so these are our working
 #      rules. Keeping them together makes them easy to explain, and easy to
@@ -43,7 +43,7 @@ def _percent(part: Decimal, whole: Decimal) -> Decimal | None:
     return (part * 100 / whole).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
 
 
-# [LABOR COST HERE]
+# [ACME: LABOR COST HERE]
 # How: Each assignment costs hours x the employee's hourly rate, where the
 #      hourly rate is salary / 2,080 (40 hours x 52 weeks). "To date" counts
 #      weeks that have started; "committed" counts every assigned week.
@@ -78,7 +78,7 @@ def _labor_costs(project_id: str, this_week: str) -> tuple[Decimal, Decimal, int
     return to_date.quantize(cents), committed.quantize(cents), len(missing_salary)
 
 
-# [AT-RISK RULES HERE]
+# [ACME: AT-RISK RULES HERE]
 # How: A project gets a flag (with a plain-English reason) for each of these:
 #      past its end date; an active milestone past its end date; ending within
 #      14 days with milestones still open; time elapsed more than 25 points
@@ -140,7 +140,7 @@ def project_health(project: Record, viewer: Record, today: date) -> Record:
             flags.append({"code": "no_milestones", "params": {},
                           "message": "The project has started but has no milestones."})
         if budget is not None and cost_committed > Decimal(budget):
-            # [NO BUDGET LEAK IN FLAGS HERE]
+            # [ACME: NO BUDGET LEAK IN FLAGS HERE]
             # How: Employees get the over-budget warning without any amounts.
             # Why: Employees aren't shown budgets or costs anywhere else, so a
             #      risk message must not reveal them either.
@@ -214,7 +214,7 @@ def project_overview(actor: Record, query: dict[str, str]) -> list[Record]:
     return summaries
 
 
-# [UTILIZATION HERE]
+# [ACME: UTILIZATION HERE]
 # How: For each employee the actor can see, total their assigned hours for
 #      the week and label them fully_booked (40), partly_booked, or unassigned.
 # Why: Answers "how are resources allocated" and "who is over-allocated".
@@ -283,7 +283,7 @@ def project_chain(actor: Record, project_id: str) -> list[Record]:
 
 
 
-# [PORTFOLIO TIMELINE DATA HERE]
+# [ACME: PORTFOLIO TIMELINE DATA HERE]
 # How: One call returns every project the user can see, with its dates,
 #      manager's name, risk flags, and milestones (completed ones included),
 #      each milestone marked done, in progress, planned, or overdue.
@@ -332,7 +332,7 @@ def portfolio_timeline(actor: Record) -> list[Record]:
     return lanes
 
 
-# [CAPACITY HEAT MAP DATA HERE]
+# [ACME: CAPACITY HEAT MAP DATA HERE]
 # How: Runs the weekly utilization for several weeks in a row (default 6,
 #      at most 12) and turns it into one row per person with their booked
 #      hours for each week.
@@ -369,7 +369,7 @@ def capacity(actor: Record, start: str | None, weeks: str | None) -> Record:
     return {"weeks": mondays, "capacity": CAPACITY, "people": ordered}
 
 
-# [BUDGET BURN DATA HERE]
+# [ACME: BUDGET BURN DATA HERE]
 # How: For one project, adds up labor cost (hours x salary / 2,080) week by
 #      week from the project's first week to its last. "to_date" is the
 #      running total for weeks up to this one; "forecast" carries on from this

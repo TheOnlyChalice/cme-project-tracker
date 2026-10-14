@@ -114,6 +114,9 @@ when the site is served from S3 behind CloudFront.
 
 ## Finding added components
 
+In VS Code, press **Ctrl+Shift+F** and search for `[ACME:` to list every tagged
+component across the project. From a terminal:
+
 ```bash
-grep -rn "HERE]" frontend/src
+grep -rn "\[ACME:" frontend/src
 ```

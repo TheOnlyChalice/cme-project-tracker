@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext.js';
 import { useColorMode } from '../theme/ColorModeContext.js';
 
-// [APPEARANCE CONTROLS HERE]
+// [ACME: APPEARANCE CONTROLS HERE]
 // How: A sun/moon button switches light and dark mode, and an EN | ES switch
 //      changes the language. Both are in the top bar and on the login page.
 // Why: Keeping both in one small component means they look and behave the

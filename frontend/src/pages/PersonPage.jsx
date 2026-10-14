@@ -35,7 +35,7 @@ Row.propTypes = {
   children: PropTypes.node,
 };
 
-// [PERSON PAGE HERE]
+// [ACME: PERSON PAGE HERE]
 // How: One page per person, opened by clicking a name almost anywhere (the
 //      People directory, the heat map, milestone chips, a project's manager,
 //      the audit log). It shows their role, job, manager (or team, for

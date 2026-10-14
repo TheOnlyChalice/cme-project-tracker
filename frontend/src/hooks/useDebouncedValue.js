@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-// [SEARCH DEBOUNCE HERE]
+// [ACME: SEARCH DEBOUNCE HERE]
 // How: Returns the value only after it has stopped changing for 300 ms.
 // Why: Typing "migration" would otherwise send nine searches to the API, one
 //      per letter; waiting for a pause sends one.

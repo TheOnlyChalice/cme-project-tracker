@@ -21,7 +21,7 @@ function toForm(user) {
   };
 }
 
-// [USER FORM HERE]
+// [ACME: USER FORM HERE]
 // How: Admins create people (the system generates the 6-character username)
 //      and edit their role, manager, job title, and salary. Leaving the
 //      password blank when editing keeps the current one.
@@ -91,7 +91,7 @@ export default function UserDialog({ open, user, managers, onClose, onSaved }) {
         <MenuItem value="manager">{t('Manager')}</MenuItem>
         <MenuItem value="admin">{t('Admin')}</MenuItem>
       </TextField>
-      {/* [REPORTS TO FIELD HERE]
+      {/* [ACME: REPORTS TO FIELD HERE]
           How: The "Reports to" picker only appears for employees, and is required
                for them. Choosing Manager or Admin hides it and clears it.
           Why: Managers and admins lead teams; they don't work under anyone. */}

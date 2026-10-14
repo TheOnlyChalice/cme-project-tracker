@@ -17,7 +17,7 @@ def register(router: Router) -> None:
         router: The router to register routes on.
     """
 
-    # [THIN ROUTES HERE]
+    # [ACME: THIN ROUTES HERE]
     # How: Each route only identifies the caller, reads the request, and calls
     #      a service function. All rules live in app/services/users.py.
     # Why: Keeping HTTP handling separate from business rules means the rules

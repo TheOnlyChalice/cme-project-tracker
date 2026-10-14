@@ -27,7 +27,7 @@ import { useT } from '../i18n/LanguageContext.js';
 import { formatMoney, fullName } from '../utils/format.js';
 import { isAdmin } from '../utils/roles.js';
 
-// [PEOPLE PAGE HERE]
+// [ACME: PEOPLE PAGE HERE]
 // How: Managers see themselves and their team; admins see everyone and can
 //      create, edit, archive, and restore people. Search and role filters
 //      run on the backend after its visibility rules.
@@ -54,7 +54,7 @@ export default function PeoplePage() {
   const everyone = useLoader(() => (admin ? api('/users').then((d) => d.users) : Promise.resolve([])), [admin]);
   const managers = (everyone.data || []).filter((u) => u.role !== 'employee');
   const names = Object.fromEntries((everyone.data || data || []).map((u) => [u.id, fullName(u)]));
-  // [PEOPLE PAGING HERE]
+  // [ACME: PEOPLE PAGING HERE]
   // How: The directory shows 25 people per page (10, 25, 50, or 100), after
   //      search and role filters are applied.
   // Why: Admins now see 80+ people; one long table was hard to scan.
@@ -105,7 +105,7 @@ export default function PeoplePage() {
               {pager.pageItems.map((person) => (
                 <TableRow key={person.id} hover
                   sx={{ opacity: person.is_archived ? 0.6 : 1, cursor: 'pointer' }}
-                  // [PERSON ROW LINK HERE]
+                  // [ACME: PERSON ROW LINK HERE]
                   // How: Clicking a row opens that person's page (unless text was
                   //      being selected, or a button in the row was clicked).
                   // Why: The directory is the natural way into someone's details.

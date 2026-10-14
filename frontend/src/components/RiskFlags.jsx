@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext.js';
 import { FLAG_LABELS, flagText } from '../i18n/translate.js';
 
-// [RISK FLAG CHIPS HERE]
+// [ACME: RISK FLAG CHIPS HERE]
 // How: Each risk flag from the backend becomes a short warning chip; hovering
 //      (or long-pressing on a phone) shows the full reason in the chosen language.
 // Why: Managers can scan a list and immediately see *why* a project is at

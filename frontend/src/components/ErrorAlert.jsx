@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext.js';
 import { errorStatus, errorText } from '../i18n/translate.js';
 
-// [ERROR DISPLAY HERE]
+// [ACME: ERROR DISPLAY HERE]
 // How: Shows the error's HTTP status code as the title (for example
 //      "Error 409"), then the backend's message in the chosen language, with
 //      an optional Retry button.

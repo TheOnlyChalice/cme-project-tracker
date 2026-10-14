@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 
-# [DEV ENV FILE HERE]
+# [ACME: DEV ENV FILE HERE]
 # How: Before the app loads, each KEY=VALUE line in backend/v1/.env becomes an
 #      environment variable, unless that variable is already set.
 # Why: The database settings (host, password, database name) must be set
@@ -58,7 +58,7 @@ from function import handler  # noqa: E402  pylint: disable=wrong-import-positio
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-    # [CORS AUTH HEADER HERE]
+    # [ACME: CORS AUTH HEADER HERE]
     # How: Authorization is listed by name rather than relying on "*".
     # Why: Browsers don't let the "*" wildcard cover the Authorization header,
     #      so without this the React app on port 3000 couldn't send its token.
@@ -66,7 +66,7 @@ CORS_HEADERS = {
 }
 
 
-# [LOCAL DEV SERVER HERE]
+# [ACME: LOCAL DEV SERVER HERE]
 # How: A standard-library HTTP server turns each request into the same event
 #      shape a Lambda Function URL sends, calls handler(), and writes the
 #      response back, adding CORS headers for the React app on port 3000.
@@ -142,7 +142,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=3001, help="Port to listen on (default 3001).")
     args = parser.parse_args()
 
-    # [LOCALHOST ONLY HERE]
+    # [ACME: LOCALHOST ONLY HERE]
     # How: The server binds to 127.0.0.1 rather than 0.0.0.0.
     # Why: Only your own machine can reach it, and the Bandit security scan in
     #      the repo's GitHub workflow flags servers that listen on all interfaces.

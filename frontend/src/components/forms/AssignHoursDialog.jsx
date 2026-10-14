@@ -7,7 +7,7 @@ import { useT } from '../../i18n/LanguageContext.js';
 import { fieldError, formatHours, fullName, mondayOf } from '../../utils/format.js';
 import FormDialog from './FormDialog.jsx';
 
-// [ASSIGN HOURS FORM HERE]
+// [ACME: ASSIGN HOURS FORM HERE]
 // How: The manager picks a project first, then one of its active milestones,
 //      then an employee from that project manager's team, a week, and the
 //      hours. While they choose, the form shows how many of that person's 40

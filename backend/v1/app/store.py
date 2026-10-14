@@ -11,7 +11,7 @@ from app.storage.cache import CachedStore
 from app.storage.memory import InMemoryStore
 
 
-# [STORAGE SELECTION HERE]
+# [ACME: STORAGE SELECTION HERE]
 # How: STORE_BACKEND=postgres or STORE_BACKEND=memory picks a backend
 #      explicitly. If it isn't set, PostgreSQL is used whenever POSTGRES_HOST
 #      is set (always true on Lambda, where the workshop injects it), and

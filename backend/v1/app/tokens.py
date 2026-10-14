@@ -24,7 +24,7 @@ ACCESS = "access"
 REFRESH = "refresh"
 
 
-# [JWT SECRET HERE]
+# [ACME: JWT SECRET HERE]
 # How: Tokens are signed with the JWT_SECRET environment variable. On AWS,
 #      Terraform generates a random 64-character secret (infra/jwt.tf) and
 #      gives it to Lambda. Locally, put one in backend/v1/.env; if it's
@@ -80,7 +80,7 @@ def refresh_days() -> int:
     return int(os.getenv("REFRESH_TOKEN_DAYS", "7"))
 
 
-# [TOKEN CONTENTS HERE]
+# [ACME: TOKEN CONTENTS HERE]
 # How: Each token carries the user's ID (sub), username, role, token version
 #      (ver), its type (access or refresh), when it was issued (iat), when it
 #      expires (exp), a unique ID (jti), and the issuer (iss). It's signed
@@ -136,7 +136,7 @@ def issue_pair(user: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-# [TOKEN VERIFICATION HERE]
+# [ACME: TOKEN VERIFICATION HERE]
 # How: The signature, expiry, issuer, and required claims are all checked,
 #      only HS256 is accepted, and the token type must match what the
 #      endpoint expects. Expired tokens get their own error code.

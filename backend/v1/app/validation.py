@@ -15,7 +15,7 @@ from app.responses import ApiError
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-# [FIELD VALIDATOR HERE]
+# [ACME: FIELD VALIDATOR HERE]
 # How: A Validator reads fields from the request body, records an error
 #      message per bad field, and raise_if_errors() turns them into one 400
 #      response with a "details" map like {"email": "Must be a valid email."}.
@@ -149,7 +149,7 @@ class Validator:
         else:
             self.cleaned[name] = amount
 
-    # [DATE AND NUMBER VALIDATORS HERE]
+    # [ACME: DATE AND NUMBER VALIDATORS HERE]
     # How: Validators for dates (YYYY-MM-DD), whole numbers, hours, and lists
     #      of text, with the same error-collecting behavior as the others.
     # Why: Projects, milestones, and hour assignments all need these checks,

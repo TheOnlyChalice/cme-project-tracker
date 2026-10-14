@@ -27,7 +27,7 @@ DetailRow.propTypes = {
   children: PropTypes.node,
 };
 
-// [PROFILE PAGE HERE]
+// [ACME: PROFILE PAGE HERE]
 // How: Everyone can update their own name, email, and photo link, and change
 //      their password by entering the current one. Changing the password
 //      signs out every session, so the page signs straight back in with the
@@ -89,7 +89,7 @@ export default function ProfilePage() {
     <>
       <PageHeader title={t('My profile')} subtitle={t('Signed in as {username}', { username: user.username })} actions={<StatusChip value={user.role} />} />
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>
-        {/* [ACCOUNT DETAILS HERE]
+        {/* [ACME: ACCOUNT DETAILS HERE]
             How: A read-only card with the user's username, role, job title,
                  manager, and start date. Salary and the internal ID are left out.
             Why: People should be able to see the facts about their own

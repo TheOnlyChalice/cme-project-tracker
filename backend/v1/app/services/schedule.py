@@ -82,7 +82,7 @@ def _stray_hours(milestone_id: str, start: str, end: str) -> tuple[list[Record],
     return future, locked
 
 
-# [DATE SHIFT CHECK HERE]
+# [ACME: DATE SHIFT CHECK HERE]
 # How: Before anything is saved, every planned milestone move is checked: it
 #      must stay on or after the project start, must end on or before the
 #      project end (unless "extend the project" was ticked, in which case the
@@ -134,7 +134,7 @@ def check_plan(plan: list[tuple[Record, str, str]], project_start: str, project_
     return new_project_end
 
 
-# [DATE SHIFT APPLY HERE]
+# [ACME: DATE SHIFT APPLY HERE]
 # How: Saves each milestone's new dates with its own audit entry, and
 #      releases any future-week hours that now fall outside its dates (also
 #      audited), returning how many were released.

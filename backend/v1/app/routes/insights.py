@@ -17,7 +17,7 @@ def register(router: Router) -> None:
         router: The router to register routes on.
     """
 
-    # [INSIGHTS ROUTES HERE]
+    # [ACME: INSIGHTS ROUTES HERE]
     # How: Read-only endpoints built on the same visibility rules as the rest
     #      of the API, so each role's dashboard only ever covers what it can see.
     # Why: These answer the business questions directly: project status,

@@ -28,7 +28,7 @@ UUID_PATTERN = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
 SCHEMA_LOCK_ID = 724001
 
-# [COLUMN TYPE MAP HERE]
+# [ACME: COLUMN TYPE MAP HERE]
 # (The "# nosec B608" notes below tell the Bandit security scan that these
 #  SQL strings are safe: table and column names only ever come from this map,
 #  and every value is passed separately as a %s parameter.)
@@ -145,7 +145,7 @@ class PostgresStore:
         self._lock = threading.RLock()
         self._schema_ready = False
 
-    # [DATABASE CONNECTION HERE]
+    # [ACME: DATABASE CONNECTION HERE]
     # How: One connection is opened on first use and reused for later requests,
     #      using the POSTGRES_* settings the workshop injects into Lambda (or
     #      your own locally). If it breaks, it's dropped and reopened next time.
@@ -193,7 +193,7 @@ class PostgresStore:
         import psycopg
         from psycopg import errors
 
-        # [DATABASE ERROR TRANSLATION HERE]
+        # [ACME: DATABASE ERROR TRANSLATION HERE]
         # How: Constraint errors from PostgreSQL become normal API errors
         #      (409 for duplicates and broken links, 400 for failed checks).
         #      Lost connections are dropped so the next request reconnects.
@@ -215,7 +215,7 @@ class PostgresStore:
             raise
         return [{key: _from_db(value) for key, value in row.items()} for row in rows]
 
-    # [SCHEMA SETUP HERE]
+    # [ACME: SCHEMA SETUP HERE]
     # How: On first use, schema.sql runs inside a transaction holding a
     #      PostgreSQL advisory lock.
     # Why: Lambda can start several copies at once; the lock makes them take
@@ -247,7 +247,7 @@ class PostgresStore:
             logger.exception("Database ping failed")
             return False
 
-    # [DATABASE TRANSACTION HERE]
+    # [ACME: DATABASE TRANSACTION HERE]
     # How: Each request runs inside one PostgreSQL transaction. If the request
     #      raises any error, every change it made is rolled back. Nested calls
     #      become savepoints.
@@ -261,7 +261,7 @@ class PostgresStore:
             with self._connection().transaction():
                 yield
 
-    # [ROW LOCK HERE]
+    # [ACME: ROW LOCK HERE]
     # How: SELECT ... FOR UPDATE locks a row until the transaction ends.
     # Why: Used before checking an employee's 40-hour cap and a project's hour
     #      budget. Without it, two managers booking the same person at the same
@@ -337,7 +337,7 @@ class PostgresStore:
         Returns:
             Matching records, oldest first.
         """
-        # [SQL FILTERING HERE]
+        # [ACME: SQL FILTERING HERE]
         # How: Exact-match conditions become a SQL WHERE clause, so PostgreSQL
         #      uses its indexes and returns only matching rows. Anything more
         #      complex (visibility rules, searches) runs as a Python check

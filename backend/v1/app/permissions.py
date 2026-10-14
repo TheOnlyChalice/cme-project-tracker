@@ -11,7 +11,7 @@ MANAGER = "manager"
 EMPLOYEE = "employee"
 ROLES = (ADMIN, MANAGER, EMPLOYEE)
 
-# [ROLE HIERARCHY HERE]
+# [ACME: ROLE HIERARCHY HERE]
 # How: Each role gets a rank, and a check passes if the user's rank is at
 #      least the required one.
 # Why: The requirements say Admin inherits Manager, which inherits Employee.
@@ -62,7 +62,7 @@ def is_admin(user: Record) -> bool:
     return user.get("role") == ADMIN
 
 
-# [USER VISIBILITY HERE]
+# [ACME: USER VISIBILITY HERE]
 # How: Admins see everyone, including archived users. Managers see themselves
 #      and the employees who report to them. Employees see only themselves.
 # Why: Matches the role rules: a manager's "team" is the people reporting to
@@ -88,7 +88,7 @@ def can_view_user(viewer: Record, target: Record) -> bool:
     return viewer.get("role") == MANAGER and target.get("manager_id") == viewer["id"]
 
 
-# [PROJECT VISIBILITY HERE]
+# [ACME: PROJECT VISIBILITY HERE]
 # How: Admins see every project, including completed, abandoned, and archived
 #      ones. Managers see the active projects they manage. Employees see the
 #      active projects managed by their own manager (their team's projects).
@@ -114,7 +114,7 @@ def can_view_project(viewer: Record, project: Record) -> bool:
     return bool(viewer.get("manager_id")) and project.get("manager_id") == viewer.get("manager_id")
 
 
-# [PROJECT MANAGEMENT RIGHTS HERE]
+# [ACME: PROJECT MANAGEMENT RIGHTS HERE]
 # How: The project's own manager or any admin may change it.
 # Why: "Each project has one manager", and admins can do every manager action.
 def can_manage_project(viewer: Record, project: Record) -> bool:

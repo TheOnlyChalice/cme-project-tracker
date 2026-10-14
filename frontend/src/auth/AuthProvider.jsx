@@ -4,7 +4,7 @@ import { api, setSessionEndedHandler } from '../api/client.js';
 import { clearSession, loadSession, saveSession } from '../api/session.js';
 import { AuthContext } from './AuthContext.js';
 
-// [AUTH PROVIDER HERE]
+// [ACME: AUTH PROVIDER HERE]
 // How: Holds the signed-in user for the whole app. On start-up it restores a
 //      saved session and confirms it with GET /me; login saves the tokens;
 //      logout tells the server to cancel the tokens, then clears them locally.

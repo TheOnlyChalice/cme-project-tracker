@@ -12,7 +12,7 @@ from typing import Any
 JSON_HEADERS = {"Content-Type": "application/json"}
 
 
-# [API ERROR HERE]
+# [ACME: API ERROR HERE]
 # How: Route code raises ApiError(status, code, message) anywhere it detects a
 #      problem; the router catches it and turns it into a JSON error response.
 # Why: Handlers stay short because they never build error responses themselves,
@@ -54,7 +54,7 @@ def json_response(status: int, body: Any = None) -> dict[str, Any]:
     return response
 
 
-# [JSON SERIALIZATION HERE]
+# [ACME: JSON SERIALIZATION HERE]
 # How: Decimals (salary, budget) become JSON numbers; anything else json can't
 #      handle (dates, UUIDs) becomes a string.
 # Why: Money is stored as Decimal to avoid floating-point rounding errors, but
@@ -74,7 +74,7 @@ def _json_default(value: Any) -> Any:
     return str(value)
 
 
-# [ERROR FORMAT HERE]
+# [ACME: ERROR FORMAT HERE]
 # How: Every error becomes {"error": {"status": 409, "code": ..., "message": ...,
 #      "details": ...}}, with the HTTP status code repeated inside the body.
 # Why: One predictable shape lets the frontend show errors with a single helper

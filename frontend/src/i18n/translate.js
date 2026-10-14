@@ -2,7 +2,7 @@ import es from './es.js';
 
 const DICTIONARIES = { es };
 
-// [TRANSLATION LOOKUP HERE]
+// [ACME: TRANSLATION LOOKUP HERE]
 // How: The English sentence itself is the key. Spanish comes from es.js; if
 //      a sentence is missing there, the English is shown instead. {name}
 //      placeholders are filled in after translating.
@@ -14,7 +14,7 @@ export function translate(lang, text, vars) {
   return template.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match));
 }
 
-// [ERROR TRANSLATION HERE]
+// [ACME: ERROR TRANSLATION HERE]
 // How: Backend errors are matched by their code (e.g. "account_locked") and
 //      rebuilt in the chosen language using numbers from error.details.
 //      Unknown codes fall back to the backend's English message.
@@ -65,7 +65,7 @@ const ERROR_TEMPLATES = {
   already_completed: 'This milestone is already completed.',
 };
 
-// [ERROR STATUS CODE HERE]
+// [ACME: ERROR STATUS CODE HERE]
 // How: Every error from the server is labeled with its HTTP status code,
 //      e.g. "Error 400" (invalid input), 401 (signed out), 403 (not allowed),
 //      404 (not found), 409 (conflicts with the rules), 429 (locked out),
@@ -89,7 +89,7 @@ export function errorText(error, lang) {
 /** Translate one per-field validation message from the backend. */
 export const detailText = (message, lang) => translate(lang, message);
 
-// [RISK FLAG TRANSLATION HERE]
+// [ACME: RISK FLAG TRANSLATION HERE]
 // How: Each risk flag carries a code and its numbers (params); the sentence
 //      is rebuilt from a template in the chosen language.
 // Why: Flags are shown on every dashboard, so they must read naturally in

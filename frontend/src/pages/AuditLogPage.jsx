@@ -2,7 +2,7 @@ import AuditLogTable from '../components/AuditLogTable.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { useT } from '../i18n/LanguageContext.js';
 
-// [GENERAL AUDIT PAGE HERE]
+// [ACME: GENERAL AUDIT PAGE HERE]
 // How: The audit log in the sidebar shows account activity only: people
 //      created, edited, promoted, moved to another manager, archived, or
 //      restored. Project, milestone, and hours activity is in each project's

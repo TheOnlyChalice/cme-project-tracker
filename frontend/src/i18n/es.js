@@ -1,4 +1,4 @@
-// [SPANISH TRANSLATIONS HERE]
+// [ACME: SPANISH TRANSLATIONS HERE]
 // How: Each English sentence used in the app maps to its Spanish version.
 //      {placeholders} are kept exactly as they are and filled in at runtime.
 // Why: One file holds every translation, so reviewing or correcting the

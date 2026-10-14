@@ -26,7 +26,7 @@ def user_from_claims(claims: dict[str, Any]) -> Record:
     user = store.get("users", str(claims.get("sub", "")))
     if user is None or user.get("is_archived"):
         raise ApiError(401, "invalid_user", "This account no longer exists or is archived.")
-    # [TOKEN REVOCATION HERE]
+    # [ACME: TOKEN REVOCATION HERE]
     # How: Every token records the user's token_version when it was issued.
     #      Logging out, changing a password, changing role, or being archived
     #      increases token_version, so all older tokens stop working at once.
@@ -37,7 +37,7 @@ def user_from_claims(claims: dict[str, Any]) -> Record:
     return user
 
 
-# [BEARER TOKEN AUTH HERE]
+# [ACME: BEARER TOKEN AUTH HERE]
 # How: The caller sends "Authorization: Bearer <access token>". The token is
 #      verified, then the user is loaded fresh from the database, so their
 #      current role, manager, and archived status are always what's used.

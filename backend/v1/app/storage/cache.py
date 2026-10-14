@@ -11,7 +11,7 @@ Record = dict[str, Any]
 CACHED_TABLES = frozenset({"users", "projects", "milestones", "hour_assignments"})
 
 
-# [REQUEST READ CACHE HERE]
+# [ACME: REQUEST READ CACHE HERE]
 # How: Inside a request, the first read of a table loads all of it in one
 #      query; every later read in that request (by ID or by matching fields)
 #      is answered from that copy. Any write to a table, any row lock, and the

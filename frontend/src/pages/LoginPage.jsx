@@ -16,7 +16,7 @@ const HIGHLIGHTS = [
   "Plan each person's 40-hour week",
 ];
 
-// [LOGIN PAGE HERE]
+// [ACME: LOGIN PAGE HERE]
 // How: A split screen: a navy brand panel (logo, tagline, three highlights)
 //      beside the sign-in card. On phones the panel shrinks to a header.
 //      Sends the username (or email) and password to /auth/login, then

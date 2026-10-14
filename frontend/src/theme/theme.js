@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-// [MUI THEME HERE]
+// [ACME: MUI THEME HERE]
 // How: buildTheme(mode) builds the "navy command center" look for light or
 //      dark mode: ACME navy and white, one amber accent for highlights and
 //      risk, Space Grotesk headings over IBM Plex Sans body text, softly

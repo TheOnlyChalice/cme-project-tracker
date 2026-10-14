@@ -19,7 +19,7 @@ from app.validation import Validator, reject_unknown_fields
 
 Record = dict[str, Any]
 
-# [LOGIN LOCKOUT HERE]
+# [ACME: LOGIN LOCKOUT HERE]
 # How: Five wrong passwords in a row lock the account for 15 minutes. While
 #      it's locked, the password isn't even checked. A successful login, or an
 #      admin setting a new password, clears the count.
@@ -81,7 +81,7 @@ def _failure(code: str, message: str, status: int = 401,
     return status, {"error": error}
 
 
-# [LOGIN HERE]
+# [ACME: LOGIN HERE]
 # How: Look the user up by username or email, check the password against the
 #      stored PBKDF2 hash, and on success return an access token, a refresh
 #      token, and the user's profile. Wrong username and wrong password give
@@ -141,7 +141,7 @@ def login(data: Any) -> tuple[int, Record]:
     return 200, {**tokens.issue_pair(user), "user": serialize_user(user, user)}
 
 
-# [TOKEN REFRESH HERE]
+# [ACME: TOKEN REFRESH HERE]
 # How: A valid, unrevoked refresh token is exchanged for a brand-new access
 #      and refresh token pair.
 # Why: Access tokens are short-lived to limit the damage if one leaks. Refresh
@@ -170,7 +170,7 @@ def refresh(data: Any) -> Record:
     return {**tokens.issue_pair(user), "user": serialize_user(user, user)}
 
 
-# [LOGOUT HERE]
+# [ACME: LOGOUT HERE]
 # How: Logging out raises the user's token version, which instantly
 #      invalidates every access and refresh token they hold, on every device.
 # Why: Simply deleting the token in the browser would leave copies usable

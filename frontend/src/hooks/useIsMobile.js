@@ -1,6 +1,6 @@
 import { useMediaQuery } from 'react-responsive';
 
-// [REACT RESPONSIVE HERE]
+// [ACME: REACT RESPONSIVE HERE]
 // How: react-responsive's useMediaQuery reports whether the screen is narrower
 //      than 900px (Material UI's "md" breakpoint).
 // Why: The brief asks for React Responsive. Pages use this to switch layouts,

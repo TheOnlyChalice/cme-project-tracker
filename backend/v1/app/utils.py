@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 
-# [ID AND TIMESTAMP HELPERS HERE]
+# [ACME: ID AND TIMESTAMP HELPERS HERE]
 # How: IDs are random UUID4 strings; timestamps are UTC in ISO 8601 format.
 # Why: The data model specifies UUID primary keys. Storing every timestamp in
 #      UTC avoids time zone bugs, since Lambda runs in UTC and your PC doesn't.

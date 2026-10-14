@@ -25,7 +25,7 @@ function show(value) {
   return String(value);
 }
 
-// [AUDIT LOG TABLE HERE]
+// [ACME: AUDIT LOG TABLE HERE]
 // How: One shared, read-only table used by both audit logs: the general one
 //      (people and accounts) and each project's own. It pages through
 //      entries newest first, with filters for person, action, item type (when
@@ -97,7 +97,7 @@ export default function AuditLogTable({ path, itemTypes, itemName = () => '' }) 
                   <TableRow key={entry.id} sx={{ verticalAlign: 'top' }}>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(entry.created_at)}</TableCell>
                     <TableCell>
-                      {/* [AUDIT LINKS HERE]
+                      {/* [ACME: AUDIT LINKS HERE]
                           How: The person who made a change, and a person who was
                                changed, link to their person page.
                           Why: Following up on an audit entry usually means looking

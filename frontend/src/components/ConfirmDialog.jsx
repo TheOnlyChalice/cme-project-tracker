@@ -5,7 +5,7 @@ import { useT } from '../i18n/LanguageContext.js';
 import BusyButton from './BusyButton.jsx';
 import ErrorAlert from './ErrorAlert.jsx';
 
-// [CONFIRM DIALOG HERE]
+// [ACME: CONFIRM DIALOG HERE]
 // How: Asks "Are you sure?" before an action runs, shows a spinner on the
 //      button while it runs, and keeps the dialog open with the error if it fails.
 // Why: Completing, abandoning, or archiving can't be undone by most users,

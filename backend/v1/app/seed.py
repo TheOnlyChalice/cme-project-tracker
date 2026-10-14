@@ -12,7 +12,7 @@ from app.seed_bulk import bulk_specs
 from app.store import store
 from app.utils import now_iso
 
-# [SEED DATA HERE]
+# [ACME: SEED DATA HERE]
 # How: On startup, starter and demo records are added with fixed IDs, dated
 #      relative to today. Each record is only added if its ID isn't already
 #      there, so new demo data can be added to an existing database without
@@ -44,7 +44,7 @@ CORE_USERS: list[dict[str, Any]] = [
      "job_title": "Systems Engineer", "salary": "92000", "manager": "mgr002"},
 ]
 
-# [DEMO DATA HERE]
+# [ACME: DEMO DATA HERE]
 # How: Extra people and projects that show off more of the app: a third
 #      manager and team, an employee split across two projects, someone fully
 #      free, a project going quiet (inactive warning, auto-archives in a few

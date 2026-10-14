@@ -10,7 +10,7 @@ from app.utils import now_iso
 Record = dict[str, Any]
 
 
-# [FUTURE HOURS RELEASE HERE]
+# [ACME: FUTURE HOURS RELEASE HERE]
 # How: When a project or milestone is completed, abandoned, or archived, or an
 #      employee moves to a different manager, every hour assignment it affects
 #      in a FUTURE week is archived (with an audit entry). The current and past

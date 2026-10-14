@@ -19,7 +19,7 @@ def register(router: Router) -> None:
         router: The router to register routes on.
     """
 
-    # [HEALTH CHECK HERE]
+    # [ACME: HEALTH CHECK HERE]
     # How: GET /health returns status, version, server time, which storage
     #      backend is in use, and whether the database answers (503 if not).
     # Why: Gives a fast way to confirm the API and its database are reachable,
@@ -36,7 +36,7 @@ def register(router: Router) -> None:
             "time": datetime.now(timezone.utc).isoformat(),
         })
 
-    # [ROUTE DISCOVERY HERE]
+    # [ACME: ROUTE DISCOVERY HERE]
     # How: GET / lists every registered route.
     # Why: Lets you see the whole API at a glance while developing and testing.
     def index(_request: Request) -> dict[str, Any]:

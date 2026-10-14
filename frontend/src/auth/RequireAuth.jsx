@@ -4,7 +4,7 @@ import Loading from '../components/Loading.jsx';
 import { hasRole } from '../utils/roles.js';
 import { useAuth } from './AuthContext.js';
 
-// [ROUTE GUARD HERE]
+// [ACME: ROUTE GUARD HERE]
 // How: Wraps protected pages. Signed-out visitors are sent to the login page
 //      (and returned afterwards); signed-in users without the needed role are
 //      sent to the dashboard.

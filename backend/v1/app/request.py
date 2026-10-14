@@ -45,7 +45,7 @@ class Request:
             raise ApiError(400, "invalid_json", "Request body must be valid JSON.") from exc
 
 
-# [PATH NORMALIZATION HERE]
+# [ACME: PATH NORMALIZATION HERE]
 # How: Strip a leading "/api/v1" if present, then remove extra slashes, so
 #      "/api/v1/projects/", "/projects", and "projects" all become "/projects".
 # Why: CloudFront forwards the full path in the cloud, while the local proxy
@@ -67,7 +67,7 @@ def normalize_path(raw_path: str) -> str:
     return "/" + path.strip("/")
 
 
-# [EVENT PARSING HERE]
+# [ACME: EVENT PARSING HERE]
 # How: Read the method, path, query, headers, and body out of the Lambda
 #      Function URL event (payload format 2.0), decoding base64 bodies.
 # Why: Lambda has no web framework, so this replaces what Flask or FastAPI

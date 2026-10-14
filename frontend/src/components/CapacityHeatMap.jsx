@@ -14,7 +14,7 @@ function bucket(hours) {
   return 0;
 }
 
-// [CAPACITY HEAT MAP HERE]
+// [ACME: CAPACITY HEAT MAP HERE]
 // How: One row per person and one column per week. Each cell is shaded by
 //      how much of that person's 40 hours is booked (empty, light, medium,
 //      nearly full, and amber when full) and shows the hours. The current

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 Handler = Callable[[Request], dict[str, Any]]
 
 
-# [ROUTER HERE]
+# [ACME: ROUTER HERE]
 # How: Routes are stored as (method, path segments, handler). Each request's
 #      path is split into segments and compared against every route; segments
 #      in braces like {id} match anything and are captured as path parameters.
@@ -98,7 +98,7 @@ class Router:
                 path_exists = True
                 if method == request.method:
                     request.path_params = params
-                    # [REQUEST TRANSACTION HERE]
+                    # [ACME: REQUEST TRANSACTION HERE]
                     # How: The whole route runs inside one storage transaction.
                     # Why: If any step raises an error (including an ApiError
                     #      after some rows were written), every change from
@@ -106,7 +106,7 @@ class Router:
                     with store.transaction():
                         return handler(request)
 
-            # [404 VS 405 HERE]
+            # [ACME: 404 VS 405 HERE]
             # How: If the path matched some route but not with this method,
             #      return 405; if nothing matched the path at all, return 404.
             # Why: The difference tells the frontend developer whether the URL
@@ -117,7 +117,7 @@ class Router:
             raise ApiError(404, "not_found", f"No route matches {request.path}.")
         except ApiError as err:
             return error_response(err)
-        # [CATCH-ALL ERROR HERE]
+        # [ACME: CATCH-ALL ERROR HERE]
         # How: Any unexpected exception is logged with its full traceback and
         #      returned as a generic 500.
         # Why: The traceback goes to CloudWatch for debugging, but internal

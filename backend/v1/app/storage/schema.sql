@@ -1,4 +1,4 @@
--- [DATABASE SCHEMA HERE]
+-- [ACME: DATABASE SCHEMA HERE]
 -- How: Every table, constraint, index, and trigger the API needs. The script
 --      only uses "IF NOT EXISTS" / "OR REPLACE" statements, so it runs safely
 --      every time Lambda starts and never touches existing data.
@@ -33,7 +33,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_count INTEGER NOT NULL D
 ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until       TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key ON users (lower(email));
 
--- [MANAGERS HAVE NO MANAGER HERE]
+-- [ACME: MANAGERS HAVE NO MANAGER HERE]
 -- How: Clears any manager set on a manager or admin from before this rule,
 --      then adds a constraint so only employees can have a manager.
 -- Why: Managers and admins lead teams; they don't work under anyone. The
@@ -135,7 +135,7 @@ CREATE INDEX IF NOT EXISTS audit_log_created_idx ON audit_log (created_at DESC);
 CREATE INDEX IF NOT EXISTS audit_log_entity_idx ON audit_log (entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS audit_log_actor_idx ON audit_log (actor_id);
 
--- [AUDIT TRIGGER HERE]
+-- [ACME: AUDIT TRIGGER HERE]
 -- How: A trigger rejects every UPDATE or DELETE on audit_log rows.
 -- Why: A second layer behind the Python check: even someone connecting to the
 --      database directly can't quietly rewrite or remove audit history.

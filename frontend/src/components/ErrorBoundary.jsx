@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Component } from 'react';
 import { LanguageContext } from '../i18n/LanguageContext.js';
 
-// [ERROR BOUNDARY HERE]
+// [ACME: ERROR BOUNDARY HERE]
 // How: Catches unexpected errors while drawing a page and shows a friendly
 //      message with a reload button instead of a blank screen.
 // Why: One broken component shouldn't take down the whole app, and a reload

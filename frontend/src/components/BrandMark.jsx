@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import PropTypes from 'prop-types';
 
-// [BRAND MARK HERE]
+// [ACME: BRAND MARK HERE]
 // How: ACME's logo: a navy "A" on an amber rounded square, drawn as an SVG so
 //      it's sharp at any size. The same shape is the browser tab icon
 //      (public/acme.svg).

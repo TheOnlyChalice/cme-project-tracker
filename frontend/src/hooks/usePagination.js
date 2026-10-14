@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-// [PAGINATION HOOK HERE]
+// [ACME: PAGINATION HOOK HERE]
 // How: Takes the full list and returns just the rows for the current page,
 //      plus the page number, page size, and setters for the paginator. If
 //      the list shrinks (for example after filtering), the page is pulled

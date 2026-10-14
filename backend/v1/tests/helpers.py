@@ -22,7 +22,7 @@ NEXT_MONDAY = "2026-10-19"
 LAST_MONDAY = "2026-10-05"
 
 
-# [TEST BASE HERE]
+# [ACME: TEST BASE HERE]
 # How: Every test freezes "today" to a fixed Wednesday, wipes the in-memory
 #      store, and reloads the seed data, then calls handler() exactly the way
 #      Lambda would.
@@ -35,7 +35,7 @@ class ApiTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Refuse to wipe a real database, then make sure tables exist."""
-        # [TEST DATABASE GUARD HERE]
+        # [ACME: TEST DATABASE GUARD HERE]
         # How: When the tests run against PostgreSQL, the database name must
         #      end in "_test", or every test stops before touching it.
         # Why: Each test empties every table before it starts. This makes it

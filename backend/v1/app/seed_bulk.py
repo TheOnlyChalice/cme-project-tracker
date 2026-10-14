@@ -57,7 +57,7 @@ WEEKS_BACK = 12
 WEEKS_AHEAD = 8
 
 
-# [BULK DEMO DATA HERE]
+# [ACME: BULK DEMO DATA HERE]
 # How: Builds 8 more managers (one per department), 64 employees, 24 projects
 #      (two active and one completed per manager), 3-5 milestones each, and
 #      several hundred weekly bookings across the last 12 and next 8 weeks.

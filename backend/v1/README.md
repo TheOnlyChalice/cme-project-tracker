@@ -238,9 +238,12 @@ All paths are under `/api/v1`. Errors always look like
 
 ## Finding added components
 
-Every significant piece of code has a `[COMPONENT HERE]` comment explaining how
+In VS Code, press **Ctrl+Shift+F** and search for `[ACME:` to list every tagged
+component across the project. From a terminal:
+
+Every significant piece of code has a `[ACME: COMPONENT HERE]` comment explaining how
 it works and why it was built that way:
 
 ```bash
-grep -rn "HERE]" backend/v1 --include=*.py
+grep -rn "\[ACME:" backend/v1 --include=*.py
 ```

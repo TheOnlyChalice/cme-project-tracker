@@ -1,4 +1,4 @@
-// [FRONTEND ROLE RULES HERE]
+// [ACME: FRONTEND ROLE RULES HERE]
 // How: Mirrors the backend's role ranking (admin > manager > employee) so the
 //      interface only shows buttons and pages a user can actually use.
 // Why: Showing an "Archive" button that always fails would be confusing. The

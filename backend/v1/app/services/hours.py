@@ -42,7 +42,7 @@ def user_week_total(user_id: str, week_start: str, exclude_id: str | None = None
     return sum((a["hours"] for a in rows), Decimal("0"))
 
 
-# [HOUR ASSIGNMENT VISIBILITY HERE]
+# [ACME: HOUR ASSIGNMENT VISIBILITY HERE]
 # How: Admins see all assignments. Managers see assignments on projects they
 #      manage and assignments for people on their team. Employees see only
 #      their own.
@@ -104,7 +104,7 @@ def _require_not_past(week_start: str) -> None:
     Raises:
         ApiError: 409 if the week is before the current week.
     """
-    # [PAST WEEKS LOCKED HERE]
+    # [ACME: PAST WEEKS LOCKED HERE]
     # How: Assignments in weeks before the current one can't be added, changed,
     #      or removed.
     # Why: Past weeks are a record of what was planned and feed the cost
@@ -114,7 +114,7 @@ def _require_not_past(week_start: str) -> None:
         raise ApiError(409, "week_closed", "That week has ended and can't be changed.")
 
 
-# [WEEKLY 40-HOUR CAP HERE]
+# [ACME: WEEKLY 40-HOUR CAP HERE]
 # How: Before saving, add up the employee's hours for that week across every
 #      milestone and project; the new total can't go over 40. The error says
 #      how many hours are still free.
@@ -157,7 +157,7 @@ def _check_project_budget(project: Record, hours: Decimal, exclude_id: str | Non
     Raises:
         ApiError: 409 with the remaining hours if the project cap would be exceeded.
     """
-    # [PROJECT ALLOCATED HOURS CHECK HERE]
+    # [ACME: PROJECT ALLOCATED HOURS CHECK HERE]
     # How: All of a project's assigned hours together can't exceed its
     #      allocated_hours.
     # Why: allocated_hours is the project's total hour budget; enforcing it at
@@ -233,7 +233,7 @@ def create_assignment(actor: Record, data: Any) -> Record:
     if milestone.get("is_archived") or milestone["status"] != "active":
         raise ApiError(409, "milestone_closed", "Hours can only go to active milestones.")
 
-    # [TEAM-ONLY ASSIGNMENT HERE]
+    # [ACME: TEAM-ONLY ASSIGNMENT HERE]
     # How: The employee must be an active employee who reports to the
     #      project's manager.
     # Why: A manager assigns their own team's hours, and employees can only
@@ -248,7 +248,7 @@ def create_assignment(actor: Record, data: Any) -> Record:
     week_start = week_param(check.data.get("week_start"))
     _require_not_past(week_start)
 
-    # [WEEK INSIDE MILESTONE HERE]
+    # [ACME: WEEK INSIDE MILESTONE HERE]
     # How: The week (Monday to Sunday) must overlap the milestone's dates.
     # Why: Booking hours for a week when the milestone isn't running would
     #      be meaningless and would distort the milestone's cost.
@@ -358,7 +358,7 @@ def remove_assignment(actor: Record, assignment_id: str) -> Record:
     return updated
 
 
-# [AVAILABILITY HERE]
+# [ACME: AVAILABILITY HERE]
 # How: For one employee and week, returns the 40-hour capacity, hours
 #      assigned, hours still free, and a breakdown by project and milestone.
 # Why: Managers need to see how much of someone's week is left before

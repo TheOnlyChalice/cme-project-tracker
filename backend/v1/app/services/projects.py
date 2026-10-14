@@ -23,7 +23,7 @@ Record = dict[str, Any]
 TABLE = "projects"
 STATUSES = ("active", "completed", "abandoned")
 
-# [BUDGET IS ADMIN-ONLY HERE]
+# [ACME: BUDGET IS ADMIN-ONLY HERE]
 # How: Managers can edit their project's name, description, dates, hours, and
 #      current milestone, but not its budget or its manager. Sending "budget"
 #      as a manager is refused (Error 400, "can't be set here").
@@ -63,7 +63,7 @@ def assigned_hours(project_id: str, exclude_id: str | None = None) -> Decimal:
                Decimal("0"))
 
 
-# [PROJECT SERIALIZATION HERE]
+# [ACME: PROJECT SERIALIZATION HERE]
 # How: Adds the derived lists from the data model (milestone IDs and assigned
 #      employee IDs) plus hours assigned so far. Budget is hidden from employees.
 # Why: The data model says these lists are worked out by the system rather
@@ -113,7 +113,7 @@ def get_visible_project(actor: Record, project_id: str) -> Record:
     return project
 
 
-# [OPEN PROJECT CHECK HERE]
+# [ACME: OPEN PROJECT CHECK HERE]
 # How: Changes to a project, its milestones, or its hours require the actor
 #      to manage the project and the project to be active and not archived.
 # Why: Completed, abandoned, and archived projects are closed records. An
@@ -173,7 +173,7 @@ def _check_manager(manager_id: Any, errors: dict[str, str]) -> None:
         errors["manager_id"] = "Must be a manager or admin."
 
 
-# [PROJECT DATE RULES HERE]
+# [ACME: PROJECT DATE RULES HERE]
 # How: The end date must be after the start date, and if the project already
 #      has milestones, every milestone must still fit inside the new dates.
 # Why: The data model requires end_date after start_date and milestone dates
@@ -205,7 +205,7 @@ def _check_dates(project_id: str | None, start: str, end: str, skip: set[str] | 
                            f"These milestones fall outside the new dates: {names}.")
 
 
-# [PROJECT SEARCH AND FILTERS HERE]
+# [ACME: PROJECT SEARCH AND FILTERS HERE]
 # How: Start from the projects the actor may see, then narrow by status,
 #      manager_id, or a search term matched against name and description.
 #      Admins can add include_archived=true to see archived projects.
@@ -341,7 +341,7 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
     if check.has("manager_id"):
         changes["manager_id"] = check.data["manager_id"]
 
-    # [PROJECT START CASCADE HERE]
+    # [ACME: PROJECT START CASCADE HERE]
     # How: If the start date moves and "shift_milestones" is ticked, every open
     #      milestone moves by the same number of days. Completed milestones
     #      stay where they are. With "extend_project" ticked, the end date
@@ -366,7 +366,7 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
         raise ApiError(409, "name_taken", "Another project already has this name.",
                        {"name": "Already in use."})
 
-    # [PROJECT HOURS CAP HERE]
+    # [ACME: PROJECT HOURS CAP HERE]
     # How: allocated_hours can't be lowered below the hours already assigned.
     # Why: allocated_hours is the project's total hour budget, and hour
     #      assignments are checked against it. Lowering it underneath existing
@@ -388,7 +388,7 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
                                {"active_milestone_id": "Must be an active milestone of this project."})
         changes["active_milestone_id"] = milestone_id
 
-    # [MANAGER HANDOVER HERE]
+    # [ACME: MANAGER HANDOVER HERE]
     # How: When an admin moves a project to a different manager, future hours
     #      booked for the old manager's team on this project are released.
     # Why: Hours can only be assigned to the project manager's own team, and
@@ -408,7 +408,7 @@ def update_project(actor: Record, project_id: str, data: Any) -> Record:
             "released_hours": released}
 
 
-# [PROJECT STATUS CHANGES HERE]
+# [ACME: PROJECT STATUS CHANGES HERE]
 # How: complete (manager or admin) and abandon (admin only) set the status
 #      and archive the project in one step; archive (admin, via DELETE) archives
 #      without changing status; restore (admin) un-archives and sets the

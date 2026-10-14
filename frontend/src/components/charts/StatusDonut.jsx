@@ -16,7 +16,7 @@ export function statusCategory(project) {
   return 'on_track';
 }
 
-// [STATUS DONUT HERE]
+// [ACME: STATUS DONUT HERE]
 // How: A ring chart (MUI X Charts) splitting active projects into on track,
 //      at risk, inactive, and no milestones, with the total in the middle.
 //      Clicking a slice, or its legend entry, filters the timeline below to

@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { NotifyContext } from './NotifyContext.js';
 
-// [TOAST MESSAGES HERE]
+// [ACME: TOAST MESSAGES HERE]
 // How: Any page can call notify("Project saved") to show a short message
 //      that disappears by itself.
 // Why: Confirms that an action worked without interrupting the user with a

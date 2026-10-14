@@ -18,7 +18,7 @@ class InMemoryStore:
 
     backend_name = "memory"
 
-    # [APPEND-ONLY AUDIT HERE]
+    # [ACME: APPEND-ONLY AUDIT HERE]
     # How: Tables listed here reject update() calls, and the store has no
     #      delete method at all. PostgreSQL adds a database trigger on top.
     # Why: The requirements say no one can edit or delete an audit entry, not
@@ -43,7 +43,7 @@ class InMemoryStore:
         """
         return True
 
-    # [MEMORY TRANSACTION HERE]
+    # [ACME: MEMORY TRANSACTION HERE]
     # How: The outermost transaction snapshots every table; if the request
     #      raises an error, the snapshot is put back. The lock is held for the
     #      whole request, so dev server threads run one request at a time.

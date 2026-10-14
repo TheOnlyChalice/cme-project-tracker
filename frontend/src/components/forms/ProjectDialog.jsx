@@ -23,7 +23,7 @@ function toForm(project) {
   };
 }
 
-// [PROJECT FORM HERE]
+// [ACME: PROJECT FORM HERE]
 // How: One form for creating (admins) and editing (the project's manager or
 //      an admin). When editing, only the fields that actually changed are
 //      sent. The manager picker only appears for admins.
@@ -56,7 +56,7 @@ export default function ProjectDialog({ open, project, managers = [], milestones
       end_date: form.end_date,
       allocated_hours: form.allocated_hours === '' ? undefined : Number(form.allocated_hours),
     };
-    // [BUDGET FIELD HERE]
+    // [ACME: BUDGET FIELD HERE]
     // How: The budget field (and its value) is only included for admins;
     //      managers see the budget on the project page but can't edit it.
     // Why: Only admins set budgets, and the backend refuses it from managers.

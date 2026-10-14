@@ -1,4 +1,4 @@
-# [REQUIREMENTS HERE]
+# [ACME: REQUIREMENTS HERE]
 # How: psycopg talks to PostgreSQL, PyJWT signs and checks sign-in tokens, and
 #      tzdata provides time zone data.
 # Why: Terraform discovers Python services by finding this file and installs

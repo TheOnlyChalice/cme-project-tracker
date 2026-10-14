@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { useT } from '../../i18n/LanguageContext.js';
 import { formatDate, formatMoney } from '../../utils/format.js';
 
-// [BUDGET BURN CHART HERE]
+// [ACME: BUDGET BURN CHART HERE]
 // How: A line chart of labor cost adding up week by week: a solid navy line
 //      for cost so far, a dashed amber line for the forecast from booked
 //      hours, and a dashed red line for the budget. A short sentence above

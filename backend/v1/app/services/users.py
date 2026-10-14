@@ -25,7 +25,7 @@ Record = dict[str, Any]
 TABLE = "users"
 USERNAME_LENGTH = 6
 
-# [FIELD PERMISSIONS HERE]
+# [ACME: FIELD PERMISSIONS HERE]
 # How: Two allow-lists decide which fields each kind of caller may send.
 #      Anyone may edit their own personal details; only admins may set
 #      role, salary, job title, and reporting manager.
@@ -41,7 +41,7 @@ CREATE_FIELDS = tuple(f for f in ADMIN_EDITABLE if f != "current_password")
 HIDDEN_FIELDS = frozenset({"password_hash", "token_version", "failed_login_count"})
 
 
-# [USER SERIALIZATION HERE]
+# [ACME: USER SERIALIZATION HERE]
 # How: Every user leaving the API goes through this function. The password
 #      hash is always removed, and salary is removed unless the viewer is an
 #      admin. Admins also see who reports to whom.
@@ -63,7 +63,7 @@ def serialize_user(user: Record, viewer: Record) -> Record:
         data.pop("salary", None)
         data.pop("locked_until", None)
     data["current_project_ids"] = current_project_ids(user)
-    # [OWN MANAGER NAME HERE]
+    # [ACME: OWN MANAGER NAME HERE]
     # How: When people look at their own record, it includes their manager's
     #      name (just the name, not the manager's full record).
     # Why: The profile page shows "Reports to", but employees can't look up
@@ -76,7 +76,7 @@ def serialize_user(user: Record, viewer: Record) -> Record:
     return data
 
 
-# [CURRENT PROJECTS HERE]
+# [ACME: CURRENT PROJECTS HERE]
 # How: Worked out on the fly: a manager's current projects are the active
 #      projects they manage; an employee's are the active projects managed by
 #      their manager (their team's projects).
@@ -100,7 +100,7 @@ def current_project_ids(user: Record) -> list[str]:
     return [p["id"] for p in projects]
 
 
-# [USERNAME GENERATION HERE]
+# [ACME: USERNAME GENERATION HERE]
 # How: First initial + up to 3 letters of the last name, padded with random
 #      digits to 6 characters (e.g. Jane Smith -> "jsmi42"). It retries with
 #      new digits if taken, then falls back to fully random characters.
@@ -148,7 +148,7 @@ def _email_in_use(email: str, exclude_id: str | None = None) -> bool:
     return bool(store.find(TABLE, lambda u: u["id"] != exclude_id, where={"email": email}))
 
 
-# [REPORTING LINE CHECK HERE]
+# [ACME: REPORTING LINE CHECK HERE]
 # How: A manager_id must point to an active manager or admin, can't be the
 #      user themselves, and can't create a loop (A reports to B who reports
 #      to A), which is checked by walking up the chain.
@@ -207,7 +207,7 @@ def _direct_reports(user_id: str) -> list[Record]:
     return store.find(TABLE, where={"manager_id": user_id, "is_archived": False})
 
 
-# [SAFE PICTURE LINK HERE]
+# [ACME: SAFE PICTURE LINK HERE]
 # How: A profile picture link must start with http:// or https://.
 # Why: Found in the role-overlap review: without this, someone could save a
 #      "javascript:" or "data:" link that other people's browsers would load
@@ -255,7 +255,7 @@ def create_user(actor: Record, data: Any) -> Record:
     if problem:
         check.errors["password"] = "This field is required." if "password" not in check.data else problem
 
-    # [ONLY EMPLOYEES HAVE MANAGERS HERE]
+    # [ACME: ONLY EMPLOYEES HAVE MANAGERS HERE]
     # How: Employees must have a manager. Managers and admins can't have one:
     #      sending a manager for them is refused.
     # Why: The data model requires every employee to be on a team (the people
@@ -314,7 +314,7 @@ def get_visible_user(actor: Record, user_id: str) -> Record:
     Raises:
         ApiError: 404 if the user doesn't exist or the actor can't see them.
     """
-    # [HIDE WHAT YOU CAN'T SEE HERE]
+    # [ACME: HIDE WHAT YOU CAN'T SEE HERE]
     # How: A user the actor isn't allowed to see returns 404, the same as one
     #      that doesn't exist.
     # Why: Returning 403 would confirm the user exists, which leaks
@@ -325,7 +325,7 @@ def get_visible_user(actor: Record, user_id: str) -> Record:
     return user
 
 
-# [USER SEARCH AND FILTERS HERE]
+# [ACME: USER SEARCH AND FILTERS HERE]
 # How: Start from the users the actor may see, then narrow by role,
 #      manager_id, or a search term matched against name, email, and username.
 #      Archived users appear only for admins who ask with include_archived=true.
@@ -430,7 +430,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
         problem = password_problem(check.data["password"])
         if problem:
             check.errors["password"] = problem
-        # [CURRENT PASSWORD CHECK HERE]
+        # [ACME: CURRENT PASSWORD CHECK HERE]
         # How: Changing your own password requires sending your current one too.
         #      Admins resetting someone else's password don't need it.
         # Why: If someone walks up to a signed-in computer, or steals a token,
@@ -468,7 +468,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     new_role = changes.get("role", target["role"])
     new_manager = changes.get("manager_id", target.get("manager_id"))
 
-    # [ROLE CHANGE SAFEGUARDS HERE]
+    # [ACME: ROLE CHANGE SAFEGUARDS HERE]
     # How: Before saving, check that an employee still has a manager, that a
     #      manager being demoted has no one reporting to them, and that the
     #      last active admin can't be demoted.
@@ -481,7 +481,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     if target["role"] in (MANAGER, ADMIN) and new_role == EMPLOYEE and _direct_reports(target["id"]):
         raise ApiError(409, "has_reports",
                        "Reassign this user's team to another manager before changing their role.")
-    # [DEMOTED MANAGER CHECK HERE]
+    # [ACME: DEMOTED MANAGER CHECK HERE]
     # How: Someone who still manages an open project can't be made an employee.
     # Why: Found in the role-overlap review: otherwise a project could end up
     #      "managed" by an employee, who could then edit it and assign hours
@@ -500,7 +500,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     changes["updated_at"] = now_iso()
     updated = store.update(TABLE, target["id"], changes)
 
-    # [SPLIT AUDIT ENTRIES HERE]
+    # [ACME: SPLIT AUDIT ENTRIES HERE]
     # How: A role change and a manager change each get their own audit entry
     #      (assign_role, assign_team); all other edits share one "update" entry.
     # Why: The audit model has specific actions for these, so admins can filter
@@ -517,7 +517,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     if updated.get("manager_id") != target.get("manager_id"):
         record_audit(actor, "assign_team", "user", target["id"],
                      pick(target, team_fields), pick(updated, team_fields))
-        # [TEAM MOVE RELEASES HOURS HERE]
+        # [ACME: TEAM MOVE RELEASES HOURS HERE]
         # How: Future hours booked on the old manager's projects are released.
         # Why: The employee can no longer see those projects, and their new
         #      manager needs those hours free to plan with.
@@ -533,7 +533,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     return serialize_user(updated, actor)
 
 
-# [USER ARCHIVE AND RESTORE HERE]
+# [ACME: USER ARCHIVE AND RESTORE HERE]
 # How: Archiving (admins only) hides a user and releases their future hours.
 #      It's blocked if they still have people reporting to them, still manage
 #      an open project, or are the last admin. Restoring brings them back, as
@@ -600,7 +600,7 @@ def restore_user(actor: Record, user_id: str) -> Record:
     return serialize_user(updated, actor)
 
 
-# [REVOKE TOKENS HERE]
+# [ACME: REVOKE TOKENS HERE]
 # How: Adds 1 to the user's token_version. Tokens carry the version they were
 #      issued with, so every older token is rejected from then on.
 # Why: Used for logout, and applied automatically after a password change, a

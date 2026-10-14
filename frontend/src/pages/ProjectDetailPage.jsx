@@ -36,7 +36,7 @@ import { useT } from '../i18n/LanguageContext.js';
 import { formatDate, formatHours, formatMoney, fullName, mondayOf } from '../utils/format.js';
 import { canManageProject, isAdmin, isManager } from '../utils/roles.js';
 
-// [PROJECT DETAIL HERE]
+// [ACME: PROJECT DETAIL HERE]
 // How: One page per project with its health numbers, the milestone chain,
 //      and the hours booked for a chosen week. Buttons only appear when the
 //      signed-in user is allowed to use them (manager of this project or an
@@ -77,7 +77,7 @@ export default function ProjectDetailPage() {
   );
   const hoursPager = usePagination(hours.data, 10);
 
-  // [JUMP TO MILESTONE HERE]
+  // [ACME: JUMP TO MILESTONE HERE]
   // How: Arriving with ?milestone=<id> (from a timeline bar or the "due soon"
   //      list), or clicking a bar on this page's timeline, scrolls to that
   //      milestone's card and outlines it in amber for a few seconds.
@@ -127,12 +127,12 @@ export default function ProjectDetailPage() {
     refresh();
   };
 
-  // [LEAVE CLOSED PROJECT HERE]
+  // [ACME: LEAVE CLOSED PROJECT HERE]
   // How: After a manager completes their project, they're taken back to the
   //      project list; admins stay on the page.
   // Why: Completed projects are archived and only admins can see archived
   //      work, so a manager staying here would immediately get "not found".
-  // [LAST MILESTONE HANDLING HERE]
+  // [ACME: LAST MILESTONE HANDLING HERE]
   // How: Completing a milestone checks the backend's project_completed answer.
   //      If it was the last open one, the user is told the project was
   //      completed and archived; managers go back to the project list, since
@@ -170,7 +170,7 @@ export default function ProjectDetailPage() {
 
   return (
     <>
-      {/* [BREADCRUMBS HERE]
+      {/* [ACME: BREADCRUMBS HERE]
           How: A trail above the title (Projects > this project) to step back up.
           Why: Detail pages are reached from many places (dashboard, timeline,
                search); the trail always shows where you are and one way out. */}
@@ -235,7 +235,7 @@ export default function ProjectDetailPage() {
         </Card>
       )}
 
-      {/* [PROJECT TIMELINE HERE]
+      {/* [ACME: PROJECT TIMELINE HERE]
           How: The same timeline as the dashboard, with one lane for this
                project, so its milestones show as bars against today.
           Why: Shows the milestone chain and any overdue step at a glance,
@@ -267,7 +267,7 @@ export default function ProjectDetailPage() {
         </Card>
       )}
 
-      {/* [MILESTONE CHAIN VIEW HERE]
+      {/* [ACME: MILESTONE CHAIN VIEW HERE]
           How: Milestones are listed in sequence order, each marked blocked
                (an earlier milestone is still open) or overdue, with its goal,
                deliverables, and who has hours on it.
@@ -312,7 +312,7 @@ export default function ProjectDetailPage() {
                 <Typography variant="body2" color="text.secondary">
                   {formatDate(m.start_date)} – {formatDate(m.end_date)}
                 </Typography>
-                {/* [MILESTONE PEOPLE HERE]
+                {/* [ACME: MILESTONE PEOPLE HERE]
                     How: Shows a chip for everyone booked on this milestone in any
                          week, with their initials and total hours, most hours first.
                     Why: The old "3 people with hours" count didn't say who, and
@@ -394,7 +394,7 @@ export default function ProjectDetailPage() {
         </TableContainer>
       )}
 
-      {/* [PROJECT AUDIT SECTION HERE]
+      {/* [ACME: PROJECT AUDIT SECTION HERE]
           How: Admins see this project's own audit log at the bottom of the
                page: every change to the project, its milestones, and its
                booked hours, filterable by person, action, item, and dates.
