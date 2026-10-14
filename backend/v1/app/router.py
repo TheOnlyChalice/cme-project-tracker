@@ -124,7 +124,7 @@ class Router:
         #      details never leak to the client, which is a security concern.
         except Exception:  # pylint: disable=broad-except
             logger.exception("Unhandled error")
-            return json_response(500, {"error": {"code": "internal_error",
+            return json_response(500, {"error": {"status": 500, "code": "internal_error",
                                                  "message": "An unexpected error occurred."}})
 
 

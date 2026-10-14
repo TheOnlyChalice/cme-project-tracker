@@ -5,7 +5,7 @@ import unittest
 from app.audit import record_audit
 from app.store import store
 from app.utils import new_id
-from tests.helpers import PORTAL, ApiTestCase, uid
+from tests.helpers import MIGRATION, PORTAL, ApiTestCase, uid
 
 
 class AuditTests(ApiTestCase):
@@ -13,7 +13,7 @@ class AuditTests(ApiTestCase):
 
     def test_changes_are_recorded_with_actor(self) -> None:
         self.ok("PATCH", f"/projects/{PORTAL}", "mgr001", {"description": "New"})
-        log = self.ok("GET", "/audit-log", "adm001", query={"entity_id": PORTAL})
+        log = self.ok("GET", f"/projects/{PORTAL}/audit-log", "adm001", query={"entity_id": PORTAL})
         entry = log["entries"][0]
         self.assertEqual(entry["action"], "update")
         self.assertEqual(entry["actor_id"], uid("mgr001"))
@@ -46,11 +46,12 @@ class AuditTests(ApiTestCase):
             record_audit(None, "delete", "test", new_id(), None, None)
 
     def test_filters_and_paging(self) -> None:
-        self.ok("PATCH", f"/projects/{PORTAL}", "mgr001", {"description": "A"})
-        self.ok("POST", f"/projects/{PORTAL}/complete", "adm001")
-        by_action = self.ok("GET", "/audit-log", "adm001", query={"action": "complete"})
+        self.ok("PATCH", f"/users/{uid('emp001')}", "emp001", {"first_name": "Samuel"})
+        self.ok("PATCH", f"/users/{uid('emp002')}", "adm001", {"job_title": "Lead QA"})
+        self.ok("DELETE", f"/users/{uid('emp002')}", "adm001")
+        by_action = self.ok("GET", "/audit-log", "adm001", query={"action": "archive"})
         self.assertEqual(by_action["total"], 1)
-        by_actor = self.ok("GET", "/audit-log", "adm001", query={"actor_id": uid("mgr001")})
+        by_actor = self.ok("GET", "/audit-log", "adm001", query={"actor_id": uid("emp001")})
         self.assertEqual(by_actor["total"], 1)
         paged = self.ok("GET", "/audit-log", "adm001", query={"limit": "1", "offset": "1"})
         self.assertEqual(len(paged["entries"]), 1)
@@ -85,3 +86,32 @@ class TransactionTests(ApiTestCase):
         result = router.dispatch({"rawPath": "/half", "requestContext": {"http": {"method": "POST"}}})
         self.assertEqual(result["statusCode"], 409)
         self.assertNotEqual(store.get("projects", PORTAL)["description"], "half-written")
+
+
+class AuditSplitTests(ApiTestCase):
+    """Project activity lives in each project's log; account activity in the general log."""
+
+    def test_general_log_has_no_project_activity(self) -> None:
+        self.ok("PATCH", f"/projects/{PORTAL}", "mgr001", {"description": "Project change"})
+        self.ok("PATCH", f"/users/{uid('emp001')}", "adm001", {"job_title": "Lead"})
+        types = {e["entity_type"] for e in self.ok("GET", "/audit-log", "adm001")["entries"]}
+        self.assertEqual(types, {"user"})
+
+    def test_project_log_has_project_milestone_and_hours_activity(self) -> None:
+        from tests.helpers import PORTAL_M2, NEXT_MONDAY
+        self.ok("PATCH", f"/projects/{PORTAL}", "mgr001", {"description": "Project change"})
+        self.ok("PATCH", f"/milestones/{PORTAL_M2}", "mgr001", {"goal": "New goal"})
+        self.ok("POST", "/hour-assignments", "mgr001",
+                {"user_id": uid("emp002"), "milestone_id": PORTAL_M2, "hours": 5, "week_start": NEXT_MONDAY},
+                expected=201)
+        self.ok("PATCH", f"/projects/{MIGRATION}", "mgr002", {"description": "Other project"})
+        log = self.ok("GET", f"/projects/{PORTAL}/audit-log", "adm001")
+        self.assertEqual({e["entity_type"] for e in log["entries"]}, {"project", "milestone", "hour_assignment"})
+        self.assertEqual(log["total"], 3)
+        only_hours = self.ok("GET", f"/projects/{PORTAL}/audit-log", "adm001", query={"entity_type": "hour_assignment"})
+        self.assertEqual(only_hours["total"], 1)
+
+    def test_project_log_is_admin_only(self) -> None:
+        self.error("GET", f"/projects/{PORTAL}/audit-log", "mgr001", 403, "forbidden")
+        self.error("GET", f"/projects/{PORTAL}/audit-log", "emp001", 403, "forbidden")
+        self.error("GET", "/projects/missing/audit-log", "adm001", 404)

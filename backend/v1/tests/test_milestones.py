@@ -109,7 +109,7 @@ class AutoCompleteTests(ApiTestCase):
         self.error("GET", f"/projects/{MIGRATION}", "mgr002", 404)
         project = self.ok("GET", f"/projects/{MIGRATION}", "adm001")
         self.assertEqual((project["status"], project["is_archived"]), ("completed", True))
-        log = self.ok("GET", "/audit-log", "adm001", query={"entity_id": MIGRATION, "action": "complete"})
+        log = self.ok("GET", f"/projects/{MIGRATION}/audit-log", "adm001", query={"entity_id": MIGRATION, "action": "complete"})
         self.assertEqual(log["entries"][0]["actor_id"], self.ok("GET", "/me", "mgr002")["id"])
 
     def test_archived_milestones_do_not_block_completion(self) -> None:

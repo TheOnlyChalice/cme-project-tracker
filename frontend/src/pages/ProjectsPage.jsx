@@ -175,10 +175,11 @@ export default function ProjectsPage() {
       ))}
 
       {/* [ARCHIVE INACTIVE BUTTON HERE]
-          How: Admins can run the two-week inactivity rule immediately; the
-               result says how many projects were archived.
-          Why: The rule also runs by itself every hour, but this lets admins
-               apply it on demand (useful for demos and clean-ups). */}
+          How: Admins can archive every project with no activity for 14 days
+               (and no upcoming hours) in one step, after confirming; the
+               result says how many were archived.
+          Why: Nothing is archived automatically any more, which was too risky.
+               This keeps a deliberate, admin-only clean-up for stale projects. */}
       <ConfirmDialog
         open={sweeping}
         title={t('Archive inactive projects now?')}

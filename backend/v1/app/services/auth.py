@@ -75,7 +75,7 @@ def _failure(code: str, message: str, status: int = 401,
     Returns:
         (status, body).
     """
-    error: Record = {"code": code, "message": message}
+    error: Record = {"status": status, "code": code, "message": message}
     if details:
         error["details"] = details
     return status, {"error": error}

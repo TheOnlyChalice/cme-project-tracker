@@ -8,6 +8,7 @@ from typing import Any
 
 from app import clock
 from app.passwords import hash_password
+from app.seed_bulk import bulk_specs
 from app.store import store
 from app.utils import now_iso
 
@@ -83,18 +84,26 @@ def seed_id(username: str) -> str:
     return str(uuid.uuid5(SEED_NAMESPACE, username))
 
 
-def seed_data(include_demo: bool = True) -> None:
+def seed_data(include_demo: bool = True, include_bulk: bool | None = None) -> None:
     """
-    Add any starter (and, by default, demo) records that are missing.
+    Add any starter, demo, and bulk records that are missing.
 
     Args:
-        include_demo: Whether to add the extra demo people and projects.
+        include_demo: Whether to add the hand-written demo people and projects.
+        include_bulk: Whether to add the ~1,000-record bulk set; by default
+                      on with the demo data unless DEMO_BULK_DATA=false.
     """
+    if include_bulk is None:
+        include_bulk = include_demo and os.getenv("DEMO_BULK_DATA", "true").lower() != "false"
     with store.transaction():
         # Two Lambda copies starting together must not both seed the database.
         store.lock_named("seed")
         users = CORE_USERS + (DEMO_USERS if include_demo else [])
         projects = _project_specs(include_demo)
+        if include_bulk:
+            bulk_users, bulk_projects = bulk_specs(clock.today())
+            users += bulk_users
+            projects += bulk_projects
         _add_missing_users(users)
         _add_missing_projects(projects)
 

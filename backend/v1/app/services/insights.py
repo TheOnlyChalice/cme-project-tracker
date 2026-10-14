@@ -10,8 +10,7 @@ from typing import Any
 from app import clock
 from app.permissions import EMPLOYEE, MANAGER, can_view_project, is_admin
 from app.services.hours import CAPACITY, week_param
-from app.services.maintenance import (INACTIVITY_ARCHIVE_DAYS, INACTIVITY_WARNING_DAYS,
-                                      days_inactive, last_activity)
+from app.services.maintenance import INACTIVITY_WARNING_DAYS, days_inactive, last_activity
 from app.services.milestones import milestone_chain
 from app.store import store
 
@@ -158,10 +157,8 @@ def project_health(project: Record, viewer: Record, today: date) -> Record:
 
         idle = days_inactive(project, today)
         if idle is not None and idle >= INACTIVITY_WARNING_DAYS:
-            remaining = max(INACTIVITY_ARCHIVE_DAYS - idle, 0)
-            flags.append({"code": "inactive", "params": {"days": idle, "archive_in": remaining},
-                          "message": f"No activity for {idle} days; it will be archived automatically "
-                                     f"in {remaining} days."})
+            flags.append({"code": "inactive", "params": {"days": idle},
+                          "message": f"No activity for {idle} days."})
 
     summary: Record = {
         "project_id": project["id"],

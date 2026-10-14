@@ -13,7 +13,6 @@ from app.responses import json_response
 from app.router import router
 from app.routes import register_all_routes
 from app.seed import seed_data
-from app.services.maintenance import maybe_run_maintenance
 from app.store import store
 
 logger = logging.getLogger()
@@ -52,7 +51,7 @@ def _bootstrap() -> dict[str, Any] | None:
         return None
     except Exception:  # pylint: disable=broad-except
         logger.exception("Storage bootstrap failed")
-        return json_response(503, {"error": {"code": "storage_unavailable",
+        return json_response(503, {"error": {"status": 503, "code": "storage_unavailable",
                                              "message": "The database is unavailable. Try again shortly."}})
 
 
@@ -70,7 +69,6 @@ def handler(event: dict[str, Any] | None = None, context: Any = None) -> dict[st
     not_ready = _bootstrap()
     if not_ready:
         return not_ready
-    maybe_run_maintenance()
     return router.dispatch(event or {})
 
 

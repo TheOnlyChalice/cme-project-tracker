@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
+import AuditLogTable from '../components/AuditLogTable.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import AssignHoursDialog from '../components/forms/AssignHoursDialog.jsx';
@@ -323,6 +324,34 @@ export default function ProjectDetailPage() {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+      {/* [PROJECT AUDIT SECTION HERE]
+          How: Admins see this project's own audit log at the bottom of the
+               page: every change to the project, its milestones, and its
+               booked hours, filterable by person, action, item, and dates.
+          Why: Your rule: project history lives with the project and is
+               admin-only; it never appears in the general audit log. */}
+      {admin && (
+        <Box component="section" aria-label={t('Project audit log')} sx={{ mt: 4 }}>
+          <Divider sx={{ mb: 3 }} />
+          <Typography variant="h6" component="h2" gutterBottom>{t('Project audit log')}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('Every change to this project, its milestones, and its booked hours. Visible to admins only.')}
+          </Typography>
+          <AuditLogTable
+            path={`/projects/${id}/audit-log`}
+            itemTypes={['project', 'milestone', 'hour_assignment']}
+            itemName={(entry, names) => {
+              if (entry.entity_type === 'milestone') return milestones.find((m) => m.id === entry.entity_id)?.name || '';
+              if (entry.entity_type === 'hour_assignment') {
+                const person = entry.changes.user_id?.after || entry.changes.user_id?.before;
+                return person ? names[person] || '' : '';
+              }
+              return '';
+            }}
+          />
+        </Box>
       )}
 
       {dialog?.type === 'edit' && (

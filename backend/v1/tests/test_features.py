@@ -3,7 +3,6 @@
 from unittest import mock
 
 from app import clock
-from app.services import maintenance
 from app.store import store
 from tests.helpers import FROZEN_TODAY, MIGRATION, PORTAL, ApiTestCase, day, uid
 
@@ -25,7 +24,7 @@ def remove_upcoming_hours(project_id: str) -> None:
 
 
 class AutoArchiveTests(ApiTestCase):
-    """Projects archive themselves after two quiet weeks."""
+    """Inactive projects are flagged, and admins can archive them on demand."""
 
     def new_project(self, name: str = "Quiet project") -> str:
         """Create a project with no milestones or hours."""
@@ -37,7 +36,7 @@ class AutoArchiveTests(ApiTestCase):
         project = self.new_project()
         age_project(project, 11)
         flags = {f["code"]: f for f in self.ok("GET", f"/projects/{project}/health", "mgr001")["risk_flags"]}
-        self.assertEqual(flags["inactive"]["params"], {"days": 11, "archive_in": 3})
+        self.assertEqual(flags["inactive"]["params"], {"days": 11})
 
     def test_admin_run_archives_quiet_projects_only(self) -> None:
         quiet = self.new_project()
@@ -47,7 +46,7 @@ class AutoArchiveTests(ApiTestCase):
         self.assertEqual([p["id"] for p in result["archived"]], [quiet])
         self.error("GET", f"/projects/{quiet}", "mgr001", 404)
         self.ok("GET", f"/projects/{fresh}", "mgr001")
-        entry = self.ok("GET", "/audit-log", "adm001", query={"entity_id": quiet})["entries"][0]
+        entry = self.ok("GET", f"/projects/{quiet}/audit-log", "adm001", query={"entity_id": quiet})["entries"][0]
         self.assertEqual((entry["action"], entry["actor_id"]), ("archive", uid("adm001")))
 
     def test_upcoming_hours_count_as_activity(self) -> None:
@@ -60,17 +59,12 @@ class AutoArchiveTests(ApiTestCase):
     def test_only_admins_can_run_it(self) -> None:
         self.error("POST", "/admin/maintenance", "mgr001", 403, "forbidden")
 
-    def test_automatic_run_is_by_system_and_throttled(self) -> None:
+    def test_nothing_is_archived_automatically(self) -> None:
         quiet = self.new_project()
-        age_project(quiet, 20)
-        maintenance.reset_auto_run()
+        age_project(quiet, 30)
         self.ok("GET", "/me", "emp001")
-        entry = self.ok("GET", "/audit-log", "adm001", query={"entity_id": quiet})["entries"][0]
-        self.assertEqual((entry["action"], entry["actor_id"]), ("archive", None))
-        second = self.new_project("Another quiet one")
-        age_project(second, 20)
-        self.ok("GET", "/me", "emp001")  # within the hour: not run again
-        self.ok("GET", f"/projects/{second}", "mgr001")
+        self.ok("GET", "/insights/projects", "adm001")
+        self.ok("GET", f"/projects/{quiet}", "mgr001")
 
     def test_far_future_archives_everything_idle(self) -> None:
         with mock.patch.object(clock, "today", return_value=FROZEN_TODAY.replace(year=2027)):

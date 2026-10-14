@@ -1,5 +1,5 @@
 import CheckIcon from '@mui/icons-material/CheckCircleOutline';
-import { Alert, Box, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.js';
@@ -8,7 +8,7 @@ import BrandMark from '../components/BrandMark.jsx';
 import BusyButton from '../components/BusyButton.jsx';
 import useIsMobile from '../hooks/useIsMobile.js';
 import { useLanguage } from '../i18n/LanguageContext.js';
-import { errorText } from '../i18n/translate.js';
+import { errorStatus, errorText } from '../i18n/translate.js';
 
 const HIGHLIGHTS = [
   'See every project on one timeline',
@@ -97,8 +97,18 @@ export default function LoginPage() {
           <CardContent sx={{ p: { xs: 3, md: 4 } }}>
             <Typography variant="h4" component="h1" gutterBottom>{t('Welcome back')}</Typography>
             <Typography color="text.secondary" sx={{ mb: 3 }}>{t('Sign in to continue')}</Typography>
-            {notice && !error && <Alert severity="info" sx={{ mb: 2 }}>{errorText(notice, lang)}</Alert>}
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error.code ? errorText(error, lang) : error.message}</Alert>}
+            {notice && !error && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                {errorStatus(notice, lang) && <AlertTitle sx={{ mb: 0.25 }}>{errorStatus(notice, lang)}</AlertTitle>}
+                {errorText(notice, lang)}
+              </Alert>
+            )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error.code && errorStatus(error, lang) && <AlertTitle sx={{ mb: 0.25 }}>{errorStatus(error, lang)}</AlertTitle>}
+                {error.code ? errorText(error, lang) : error.message}
+              </Alert>
+            )}
             <Box component="form" onSubmit={submit} noValidate sx={{ display: 'grid', gap: 2 }}>
               <TextField label={t('Username or email')} value={form.username} onChange={update('username')}
                 autoComplete="username" autoFocus size="medium" />

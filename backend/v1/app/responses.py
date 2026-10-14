@@ -75,7 +75,8 @@ def _json_default(value: Any) -> Any:
 
 
 # [ERROR FORMAT HERE]
-# How: Every error becomes {"error": {"code": ..., "message": ..., "details": ...}}.
+# How: Every error becomes {"error": {"status": 409, "code": ..., "message": ...,
+#      "details": ...}}, with the HTTP status code repeated inside the body.
 # Why: One predictable shape lets the frontend show errors with a single helper
 #      instead of handling each endpoint differently.
 def error_response(error: ApiError) -> dict[str, Any]:
@@ -88,7 +89,7 @@ def error_response(error: ApiError) -> dict[str, Any]:
     Returns:
         A Lambda proxy response with an "error" object in the body.
     """
-    payload: dict[str, Any] = {"code": error.code, "message": error.message}
+    payload: dict[str, Any] = {"status": error.status, "code": error.code, "message": error.message}
     if error.details is not None:
         payload["details"] = error.details
     return json_response(error.status, {"error": payload})

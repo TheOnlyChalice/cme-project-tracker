@@ -138,8 +138,14 @@ const es = {
   'Committed labor cost {cost} exceeds the budget {budget}.':
     'El costo laboral comprometido de {cost} supera el presupuesto de {budget}.',
   '{percent}% of allocated hours are assigned.': 'El {percent}% de las horas asignables ya está asignado.',
-  'No activity for {days} days; it will be archived automatically in {archive_in} days.':
-    'Sin actividad durante {days} días; se archivará automáticamente en {archive_in} días.',
+  'No activity for {days} days.': 'Sin actividad durante {days} días.',
+  'Network error': 'Error de red',
+  'Error {status}': 'Error {status}',
+  'Project audit log': 'Registro de auditoría del proyecto',
+  'Every change to this project, its milestones, and its booked hours. Visible to admins only.':
+    'Cada cambio en este proyecto, sus hitos y sus horas reservadas. Solo visible para administradores.',
+  "Account activity: who was created, changed, or archived, by whom, and when. Project activity is in each project's own audit log.":
+    'Actividad de cuentas: quién fue creado, modificado o archivado, por quién y cuándo. La actividad de proyectos está en el registro de auditoría de cada proyecto.',
 
   // Projects list
   'Every project in the company.': 'Todos los proyectos de la empresa.',

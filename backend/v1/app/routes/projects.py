@@ -3,7 +3,9 @@
 from typing import Any
 
 from app import clock
+from app.audit import list_project_audit
 from app.auth import current_user
+from app.permissions import ADMIN, require_role
 from app.request import Request
 from app.responses import json_response
 from app.router import Router
@@ -73,6 +75,13 @@ def register(router: Router) -> None:
         return json_response(200, {"milestones": insights.project_chain(
             actor, request.path_params["id"])})
 
+    def audit(request: Request) -> dict[str, Any]:
+        """One project's audit log (admins only)."""
+        actor = current_user(request)
+        require_role(actor, ADMIN)
+        project = projects.get_visible_project(actor, request.path_params["id"])
+        return json_response(200, list_project_audit(project["id"], request.query))
+
     router.add("GET", "/projects", list_all)
     router.add("POST", "/projects", create)
     router.add("GET", "/projects/{id}", get_one)
@@ -83,3 +92,4 @@ def register(router: Router) -> None:
     router.add("POST", "/projects/{id}/restore", restore)
     router.add("GET", "/projects/{id}/health", health)
     router.add("GET", "/projects/{id}/milestone-chain", chain)
+    router.add("GET", "/projects/{id}/audit-log", audit)

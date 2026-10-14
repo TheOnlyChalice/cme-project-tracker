@@ -68,6 +68,7 @@ class RoutingTests(ApiTestCase):
         router.add("GET", "/tea", fails)
         body = json.loads(router.dispatch({"rawPath": "/tea"})["body"])
         self.assertEqual(body["error"]["details"], {"spout": "yes"})
+        self.assertEqual(body["error"]["status"], 418)
         self.assertNotIn("body", json_response(204))
 
 

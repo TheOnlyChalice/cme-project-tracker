@@ -84,18 +84,18 @@ def record_audit(actor: Record | None, action: str, entity_type: str, entity_id:
 
 
 
-# [AUDIT FILTERS HERE]
-# How: Admins can narrow the log by who acted (actor_id), action, entity type,
-#      entity ID, and a date range (from/to, YYYY-MM-DD, inclusive), with
-#      limit/offset paging. Results are newest first with a total count.
-# Why: The audit log grows with every change; admins need to answer questions
-#      like "what did this person change last week" without reading it all.
-def list_audit(filters: dict[str, str]) -> dict[str, Any]:
+# Item types that belong to a project. Their entries live in that project's
+# own audit log, never in the general one.
+PROJECT_ENTITY_TYPES = ("project", "milestone", "hour_assignment")
+
+
+def _filtered(filters: dict[str, str], allowed: Any) -> dict[str, Any]:
     """
-    List audit entries, newest first, with optional filters and paging.
+    Filter, sort, and page audit entries.
 
     Args:
         filters: actor_id, action, entity_type, entity_id, from, to, limit, offset.
+        allowed: A function deciding which entries belong in this log at all.
 
     Returns:
         {"total": count, "limit": n, "offset": n, "entries": [...]}.
@@ -104,7 +104,9 @@ def list_audit(filters: dict[str, str]) -> dict[str, Any]:
     end = filters.get("to")
 
     def matches(entry: Record) -> bool:
-        """Decide whether an entry passes every filter."""
+        """Decide whether an entry belongs here and passes every filter."""
+        if not allowed(entry):
+            return False
         for key in ("actor_id", "action", "entity_type", "entity_id"):
             if filters.get(key) and entry[key] != filters[key]:
                 return False
@@ -123,6 +125,54 @@ def list_audit(filters: dict[str, str]) -> dict[str, Any]:
     offset = _bounded_int(filters.get("offset"), default=0, low=0, high=10**9)
     return {"total": len(entries), "limit": limit, "offset": offset,
             "entries": entries[offset:offset + limit]}
+
+
+# [GENERAL AUDIT LOG HERE]
+# How: The audit log in the sidebar lists every change EXCEPT those about
+#      projects, milestones, and booked hours: account creation, profile and
+#      password changes, role and manager changes, archiving and restoring
+#      people. Filters: person, action, item, date range, with paging.
+# Why: Your rule: the general log is for company-wide account activity, and
+#      project activity has its own log inside each project, so neither is
+#      buried under the other.
+def list_audit(filters: dict[str, str]) -> dict[str, Any]:
+    """
+    List general (non-project) audit entries, newest first.
+
+    Args:
+        filters: actor_id, action, entity_type, entity_id, from, to, limit, offset.
+
+    Returns:
+        A page of entries with the total count.
+    """
+    return _filtered(filters, lambda e: e["entity_type"] not in PROJECT_ENTITY_TYPES)
+
+
+# [PROJECT AUDIT LOG HERE]
+# How: Each project's audit log collects entries about the project itself,
+#      any of its milestones (archived ones included), and any hours booked
+#      on it (removed ones included). Which project an entry belongs to is
+#      worked out when the log is read, from the IDs of those items.
+# Why: Admins can see the full history of one project in one place. Working
+#      it out at read time means old entries never have to be rewritten,
+#      which keeps the audit log truly unchangeable.
+def list_project_audit(project_id: str, filters: dict[str, str]) -> dict[str, Any]:
+    """
+    List one project's audit entries (project, milestones, hours), newest first.
+
+    Args:
+        project_id: The project's ID.
+        filters: actor_id, action, entity_type, from, to, limit, offset.
+
+    Returns:
+        A page of entries with the total count.
+    """
+    ids = {
+        "project": {project_id},
+        "milestone": {m["id"] for m in store.find("milestones", where={"project_id": project_id})},
+        "hour_assignment": {a["id"] for a in store.find("hour_assignments", where={"project_id": project_id})},
+    }
+    return _filtered(filters, lambda e: e["entity_id"] in ids.get(e["entity_type"], set()))
 
 
 def _bounded_int(value: str | None, default: int, low: int, high: int) -> int:

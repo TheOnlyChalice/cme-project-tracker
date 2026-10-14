@@ -65,6 +65,19 @@ const ERROR_TEMPLATES = {
   already_completed: 'This milestone is already completed.',
 };
 
+// [ERROR STATUS CODE HERE]
+// How: Every error from the server is labeled with its HTTP status code,
+//      e.g. "Error 400" (invalid input), 401 (signed out), 403 (not allowed),
+//      404 (not found), 409 (conflicts with the rules), 429 (locked out),
+//      500 or 503 (server problems). Connection failures say "Network error".
+// Why: Your request: the code tells people (and support staff) at a glance
+//      what kind of problem it is, alongside the plain-language message.
+export function errorStatus(error, lang) {
+  if (!error || error.status === undefined || error.status === null) return '';
+  if (error.status === 0) return translate(lang, 'Network error');
+  return translate(lang, 'Error {status}', { status: error.status });
+}
+
 export function errorText(error, lang) {
   if (!error) return '';
   const template = ERROR_TEMPLATES[error.code];
@@ -90,7 +103,7 @@ const FLAG_TEMPLATES = {
   over_budget: 'Forecast labor cost exceeds the budget.',
   over_budget_amounts: 'Committed labor cost {cost} exceeds the budget {budget}.',
   hours_nearly_used: '{percent}% of allocated hours are assigned.',
-  inactive: 'No activity for {days} days; it will be archived automatically in {archive_in} days.',
+  inactive: 'No activity for {days} days.',
 };
 
 export const FLAG_LABELS = {

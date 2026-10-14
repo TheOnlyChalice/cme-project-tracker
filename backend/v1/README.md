@@ -138,14 +138,19 @@ resets to the starter data every time the server starts.
 - **Audit log:** every change is recorded; only admins can read it; entries can't
   be edited or deleted (enforced in Python and by a database trigger). Password
   hashes are never logged.
-- **Auto-archive:** a project with no activity (no change to it, its milestones,
-  or its hours) for 14 days, and no hours booked from the current week on, is
-  archived automatically, recorded in the audit log as "System". From day 10 it
-  carries an `inactive` risk flag. The check runs at most once an hour per
-  Lambda copy, triggered by normal requests (the workshop's AWS permissions
-  don't allow scheduled jobs); admins can run it any time with
-  `POST /admin/maintenance`. Set `INACTIVITY_ARCHIVE_DAYS` /
-  `INACTIVITY_WARNING_DAYS` to change the limits.
+- **Inactivity:** a project with no activity (no change to it, its milestones,
+  or its hours) for 10 days, and no hours booked from the current week on,
+  carries an `inactive` risk flag. Nothing is archived automatically; an admin
+  can archive projects idle for 14+ days with `POST /admin/maintenance`.
+- **Two audit logs:** `GET /audit-log` shows account activity only (people
+  created, edited, promoted, moved, archived). `GET /projects/{id}/audit-log`
+  shows everything about one project, its milestones, and its hours. Both are
+  admin-only, and neither ever rewrites an entry.
+- **Error format:** every error is `{"error": {"status", "code", "message", "details"}}`.
+- **Speed:** within a request, each table is read once and served from memory
+  afterwards (`app/storage/cache.py`), so reports stay fast with ~1,000 records.
+- **Bulk demo data:** about 1,000 records (`app/seed_bulk.py`) are added on
+  start; set `DEMO_BULK_DATA=false` to skip them.
 - **Date cascades:** when a milestone's end date moves, `PATCH /milestones/{id}`
   with `"shift_following": true` moves every later open milestone by the same
   number of days; when a project's start moves, `PATCH /projects/{id}` with
@@ -201,6 +206,7 @@ All paths are under `/api/v1`. Errors always look like
 | GET | `/insights/timeline` | any user (filtered by role) |
 | GET | `/insights/capacity?start=&weeks=` | any user (filtered by role) |
 | POST | `/admin/maintenance` | admin |
+| GET | `/projects/{id}/audit-log?actor_id=&action=&entity_type=&from=&to=&limit=&offset=` | admin |
 | GET | `/audit-log?actor_id=&action=&entity_type=&entity_id=&from=&to=&limit=&offset=` | admin |
 
 ## Structure

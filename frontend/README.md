@@ -31,6 +31,8 @@ Plex Sans body text, a navy sidebar with the ACME mark, and a white work area.
 - **English and Spanish:** the EN | ES switch translates every screen,
   including backend error messages and risk flags, plus date and money formats.
   Translations live in `src/i18n/es.js`.
+- **Error codes:** every error message shows its HTTP status code (for
+  example "Error 409") above the explanation.
 - **Loading feedback:** a progress bar runs across the top of the screen
   whenever any request is in flight, and buttons show a spinner while their
   action runs (and can't be double-clicked).
@@ -74,7 +76,8 @@ uploads the site to S3. The site and API share that address.
 | Project detail | everyone who can see it | Health, milestone chain, booked hours; managers edit, complete, add milestones, assign hours; admins abandon, archive, restore |
 | Hours | managers/admins: team planner; employees: my week | Weekly 40-hour capacity and bookings |
 | People | managers (their team), admins (everyone) | Admins create, edit, archive, restore people |
-| Audit log | admins | Filterable, read-only history of every change |
+| Audit log | admins | Account activity only (people created, edited, promoted, archived) |
+| Project audit log (bottom of each project) | admins | Every change to that project, its milestones, and its hours |
 | My profile | everyone | Edit own details, change password |
 
 ## Structure

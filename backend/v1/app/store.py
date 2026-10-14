@@ -7,6 +7,7 @@ it's talking to PostgreSQL or to memory.
 
 import os
 
+from app.storage.cache import CachedStore
 from app.storage.memory import InMemoryStore
 
 
@@ -28,8 +29,8 @@ def create_store():  # type: ignore[no-untyped-def]
     choice = os.getenv("STORE_BACKEND", "").strip().lower()
     if choice == "postgres" or (not choice and os.getenv("POSTGRES_HOST")):
         from app.storage.postgres import PostgresStore
-        return PostgresStore()
-    return InMemoryStore()
+        return CachedStore(PostgresStore())
+    return CachedStore(InMemoryStore())
 
 
 store = create_store()

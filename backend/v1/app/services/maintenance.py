@@ -1,14 +1,14 @@
 """
-Automatic housekeeping: archiving projects that have gone quiet.
+Inactivity tracking and the admin's on-demand clean-up.
 
-A project with no activity for INACTIVITY_ARCHIVE_DAYS (default 14) is
-archived automatically. Projects get an "inactive" warning flag from
-INACTIVITY_WARNING_DAYS (default 10), so managers see it coming.
+Projects with no activity for INACTIVITY_WARNING_DAYS (default 10) get an
+"inactive" warning flag. Nothing is archived automatically: an admin can run
+the clean-up on demand, which archives projects idle for
+INACTIVITY_ARCHIVE_DAYS (default 14).
 """
 
 import logging
 import os
-import time
 from datetime import date
 from typing import Any
 
@@ -23,9 +23,6 @@ Record = dict[str, Any]
 
 INACTIVITY_ARCHIVE_DAYS = int(os.getenv("INACTIVITY_ARCHIVE_DAYS", "14"))
 INACTIVITY_WARNING_DAYS = int(os.getenv("INACTIVITY_WARNING_DAYS", "10"))
-AUTO_RUN_SECONDS = 3600
-
-_last_auto_run = 0.0
 
 
 # [PROJECT ACTIVITY HERE]
@@ -86,14 +83,14 @@ def days_inactive(project: Record, today: date) -> int | None:
     return max((today - last_day).days, 0)
 
 
-# [AUTO-ARCHIVE HERE]
-# How: Every active, unarchived project idle for 14+ days (and with no hours
-#      booked from this week on) is archived. Each one gets an "archive" audit
-#      entry with no actor, which the audit log shows as "System". Admins can
-#      restore them as usual.
-# Why: Your requirement: projects with no activity for two weeks archive
-#      themselves, so stale work drops off managers' and employees' lists.
-#      Booked hours count as activity because that work is still planned.
+# [INACTIVE CLEAN-UP HERE]
+# How: Only when an admin runs it (POST /admin/maintenance), every active,
+#      unarchived project idle for 14+ days (and with no hours booked from
+#      this week on) is archived, each with an "archive" audit entry under
+#      that admin's name. Admins can restore them as usual.
+# Why: Automatic archiving was removed as too risky: nothing disappears
+#      without a person deciding to. The warning flag still tells managers
+#      a project has gone quiet.
 def archive_inactive_projects(actor: Record | None = None) -> list[Record]:
     """
     Archive every project that has been inactive too long.
@@ -118,32 +115,3 @@ def archive_inactive_projects(actor: Record | None = None) -> list[Record]:
     if archived:
         logger.info("Auto-archived %d inactive projects", len(archived))
     return archived
-
-
-# [AUTO-RUN THROTTLE HERE]
-# How: Before handling a request, each Lambda copy runs the archive check if
-#      it hasn't in the last hour, inside its own transaction and under a
-#      database lock, so two copies never run it at once. Failures are logged
-#      and never block the request.
-# Why: The workshop's AWS permissions don't allow creating a scheduled job
-#      (EventBridge), so ordinary traffic drives the check instead. Once an
-#      hour is plenty for a two-week rule, and the cost is a few quick queries.
-def maybe_run_maintenance() -> None:
-    """Run the inactivity check if this Lambda copy hasn't recently."""
-    global _last_auto_run  # pylint: disable=global-statement
-    now = time.monotonic()
-    if _last_auto_run and now - _last_auto_run < AUTO_RUN_SECONDS:
-        return
-    _last_auto_run = now
-    try:
-        with store.transaction():
-            store.lock_named("maintenance")
-            archive_inactive_projects()
-    except Exception:  # pylint: disable=broad-except
-        logger.exception("Automatic maintenance failed")
-
-
-def reset_auto_run() -> None:
-    """Forget the last automatic run (used by tests)."""
-    global _last_auto_run  # pylint: disable=global-statement
-    _last_auto_run = 0.0
