@@ -19,6 +19,8 @@ const es = {
   Language: 'Idioma',
   'Switch to dark mode': 'Cambiar a modo oscuro',
   'Switch to light mode': 'Cambiar a modo claro',
+  'Collapse menu': 'Contraer menú',
+  'Expand menu': 'Expandir menú',
 
   // Common
   Loading: 'Cargando',

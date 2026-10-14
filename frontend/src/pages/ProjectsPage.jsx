@@ -132,7 +132,19 @@ export default function ProjectsPage() {
             </TableHead>
             <TableBody>
               {data.projects.map((p) => (
-                <TableRow key={p.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/projects/${p.id}`)}>
+                <TableRow
+                  key={p.id}
+                  hover
+                  sx={{ cursor: 'pointer' }}
+                  // [ROW CLICK VS TEXT SELECT HERE]
+                  // How: Clicking a row opens the project, unless the user just
+                  //      selected some text in it.
+                  // Why: Lets people copy names and descriptions from the table
+                  //      without being whisked away to the project page.
+                  onClick={() => {
+                    if (!window.getSelection()?.toString()) navigate(`/projects/${p.id}`);
+                  }}
+                >
                   <TableCell>
                     <Typography fontWeight={600}>{p.name}</Typography>
                     <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 320 }}>{p.description}</Typography>

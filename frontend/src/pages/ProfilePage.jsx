@@ -105,7 +105,9 @@ export default function ProfilePage() {
               <DetailRow label={t('Username')}><code>{user.username}</code></DetailRow>
               <DetailRow label={t('Role')}><StatusChip value={user.role} /></DetailRow>
               <DetailRow label={t('Job title')}>{user.job_title || t('Not set')}</DetailRow>
-              <DetailRow label={t('Reports to')}>{user.manager_name || t('No manager')}</DetailRow>
+              {user.role === 'employee' && (
+                <DetailRow label={t('Reports to')}>{user.manager_name || '—'}</DetailRow>
+              )}
               <DetailRow label={t('Member since')}>{formatDate(user.created_at)}</DetailRow>
             </Box>
           </CardContent>

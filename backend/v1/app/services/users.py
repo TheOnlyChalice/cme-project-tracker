@@ -255,12 +255,16 @@ def create_user(actor: Record, data: Any) -> Record:
     if problem:
         check.errors["password"] = "This field is required." if "password" not in check.data else problem
 
-    # [EMPLOYEE NEEDS MANAGER HERE]
-    # How: manager_id is required when the role is employee, optional otherwise.
-    # Why: The data model requires employees to belong to a team, and a team
-    #      is defined as the people under a manager.
+    # [ONLY EMPLOYEES HAVE MANAGERS HERE]
+    # How: Employees must have a manager. Managers and admins can't have one:
+    #      sending a manager for them is refused.
+    # Why: The data model requires every employee to be on a team (the people
+    #      under a manager), and managers and admins lead teams rather than
+    #      working under someone.
     manager_id = check.data.get("manager_id")
-    if manager_id is not None:
+    if check.cleaned.get("role") in (MANAGER, ADMIN) and manager_id is not None:
+        check.errors["manager_id"] = "Only employees have a manager."
+    elif manager_id is not None:
         _validate_manager(manager_id, None, check.errors)
     elif check.cleaned.get("role") == EMPLOYEE:
         check.errors["manager_id"] = "Employees must have a manager."
@@ -448,6 +452,15 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     if check.has("manager_id"):
         changes["manager_id"] = check.data["manager_id"]
 
+    # Managers and admins never have a manager: setting one is refused, and
+    # promoting an employee clears theirs automatically.
+    if changes.get("role", target["role"]) in (MANAGER, ADMIN):
+        if changes.get("manager_id"):
+            raise ApiError(400, "validation_error", "Some fields are invalid.",
+                           {"manager_id": "Only employees have a manager."})
+        if target.get("manager_id") or "manager_id" in changes:
+            changes["manager_id"] = None
+
     if "email" in changes and _email_in_use(changes["email"], target["id"]):
         raise ApiError(409, "email_taken", "Another user already has this email.",
                        {"email": "Already in use."})
@@ -501,7 +514,7 @@ def update_user(actor: Record, user_id: str, data: Any) -> Record:
     if "role" in check.cleaned and updated["role"] != target["role"]:
         record_audit(actor, "assign_role", "user", target["id"],
                      pick(target, role_fields), pick(updated, role_fields))
-    if check.has("manager_id") and updated.get("manager_id") != target.get("manager_id"):
+    if updated.get("manager_id") != target.get("manager_id"):
         record_audit(actor, "assign_team", "user", target["id"],
                      pick(target, team_fields), pick(updated, team_fields))
         # [TEAM MOVE RELEASES HOURS HERE]

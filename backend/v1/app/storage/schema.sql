@@ -32,6 +32,20 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version      INTEGER NOT NULL D
 ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_count INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until       TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key ON users (lower(email));
+
+-- [MANAGERS HAVE NO MANAGER HERE]
+-- How: Clears any manager set on a manager or admin from before this rule,
+--      then adds a constraint so only employees can have a manager.
+-- Why: Managers and admins lead teams; they don't work under anyone. The
+--      update only touches rows that break the rule, so rerunning it is safe.
+UPDATE users SET manager_id = NULL WHERE role <> 'employee' AND manager_id IS NOT NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_only_employees_have_managers') THEN
+        ALTER TABLE users ADD CONSTRAINT users_only_employees_have_managers
+            CHECK (role = 'employee' OR manager_id IS NULL);
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);
 
 CREATE TABLE IF NOT EXISTS projects (

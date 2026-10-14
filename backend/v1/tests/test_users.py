@@ -123,9 +123,21 @@ class UserEditTests(ApiTestCase):
                    {"password": "short"})
 
     def test_admin_changes_role_and_manager(self) -> None:
-        user = self.ok("PATCH", f"/users/{uid('emp001')}", "adm001",
-                       {"role": "manager", "manager_id": uid("adm001"), "salary": 99000})
-        self.assertEqual(user["role"], "manager")
+        user = self.ok("PATCH", f"/users/{uid('emp001')}", "adm001", {"role": "manager", "salary": 99000})
+        self.assertEqual((user["role"], user["manager_id"]), ("manager", None))
+        moved = self.ok("PATCH", f"/users/{uid('emp002')}", "adm001", {"manager_id": uid("mgr002")})
+        self.assertEqual(moved["manager_id"], uid("mgr002"))
+
+    def test_managers_and_admins_cannot_have_a_manager(self) -> None:
+        err = self.error("PATCH", f"/users/{uid('mgr001')}", "adm001", 400, "validation_error",
+                         {"manager_id": uid("mgr002")})
+        self.assertIn("manager_id", err["details"])
+        self.error("PATCH", f"/users/{uid('emp001')}", "adm001", 400, "validation_error",
+                   {"role": "manager", "manager_id": uid("mgr002")})
+        self.error("POST", "/users", "adm001", 400, "validation_error",
+                   {**NEW_EMPLOYEE, "role": "manager", "manager_id": uid("mgr001")})
+        for username in ("adm001", "mgr001", "mgr002"):
+            self.assertIsNone(self.ok("GET", f"/users/{uid(username)}", "adm001")["manager_id"])
 
     def test_role_safeguards(self) -> None:
         self.error("PATCH", f"/users/{uid('mgr001')}", "adm001", 409, "has_reports",

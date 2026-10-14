@@ -30,13 +30,20 @@ const LABELS = {
 };
 
 /** A small colored label for statuses, roles, and booking states. */
-export default function StatusChip({ value, archived = false }) {
+export default function StatusChip({ value, archived = false, inverse = false }) {
   const t = useT();
   if (archived) return <Chip size="small" label={t('Archived')} variant="outlined" />;
+  if (inverse) {
+    return (
+      <Chip size="small" variant="outlined" label={t(LABELS[value] || value || '—')}
+        sx={{ color: '#ffffff', borderColor: 'rgba(255, 255, 255, 0.6)' }} />
+    );
+  }
   return <Chip size="small" label={t(LABELS[value] || value || '—')} color={COLORS[value] || 'default'} />;
 }
 
 StatusChip.propTypes = {
   value: PropTypes.string,
   archived: PropTypes.bool,
+  inverse: PropTypes.bool,
 };

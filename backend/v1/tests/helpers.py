@@ -10,6 +10,7 @@ from unittest import mock
 from app import clock, tokens
 from app.seed import seed_data, seed_id
 from app.store import store
+import function
 from function import handler
 
 os.environ.setdefault("JWT_SECRET", "test-secret-only-for-unit-tests-0123456789")
@@ -47,6 +48,9 @@ class ApiTestCase(unittest.TestCase):
                     f"Refusing to run tests against database '{name}'. "
                     "Use a database whose name ends in _test.")
         store.ensure_schema()
+        # Each test seeds its own data, so skip the handler's start-up seeding
+        # (which would add the larger demo set to the first test).
+        function._ready = True  # pylint: disable=protected-access
 
     def setUp(self) -> None:
         """Freeze the date and load fresh seed data."""
@@ -54,7 +58,7 @@ class ApiTestCase(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         store.reset()
-        seed_data()
+        seed_data(include_demo=False)
 
     def call(self, method: str, path: str, user: str | None = None,
              body: Any = None, query: dict[str, str] | None = None) -> tuple[int, Any]:

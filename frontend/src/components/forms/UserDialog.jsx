@@ -43,7 +43,9 @@ export default function UserDialog({ open, user, managers, onClose, onSaved }) {
       last_name: form.last_name,
       email: form.email,
       role: form.role,
-      manager_id: form.manager_id || null,
+      // Only employees have a manager; switching someone to manager or admin
+      // clears it (the backend enforces the same rule).
+      manager_id: form.role === 'employee' ? form.manager_id || null : null,
       job_title: form.job_title,
       salary: form.salary === '' ? null : Number(form.salary),
     };
@@ -89,12 +91,16 @@ export default function UserDialog({ open, user, managers, onClose, onSaved }) {
         <MenuItem value="manager">{t('Manager')}</MenuItem>
         <MenuItem value="admin">{t('Admin')}</MenuItem>
       </TextField>
-      <TextField select label={t('Reports to')} value={form.manager_id} onChange={set('manager_id')}
-        required={form.role === 'employee'} error={!!err('manager_id')}
-        helperText={err('manager_id') || (form.role === 'employee' ? t('Employees must have a manager.') : t('Optional for managers and admins.'))}>
-        <MenuItem value="">{t('No manager')}</MenuItem>
-        {managerOptions.map((m) => <MenuItem key={m.id} value={m.id}>{fullName(m)} ({t(m.role === 'admin' ? 'Admin' : 'Manager')})</MenuItem>)}
-      </TextField>
+      {/* [REPORTS TO FIELD HERE]
+          How: The "Reports to" picker only appears for employees, and is required
+               for them. Choosing Manager or Admin hides it and clears it.
+          Why: Managers and admins lead teams; they don't work under anyone. */}
+      {form.role === 'employee' && (
+        <TextField select label={t('Reports to')} value={form.manager_id} onChange={set('manager_id')}
+          required error={!!err('manager_id')} helperText={err('manager_id') || t('Employees must have a manager.')}>
+          {managerOptions.map((m) => <MenuItem key={m.id} value={m.id}>{fullName(m)} ({t(m.role === 'admin' ? 'Admin' : 'Manager')})</MenuItem>)}
+        </TextField>
+      )}
       <TextField label={t('Job title')} value={form.job_title} onChange={set('job_title')} error={!!err('job_title')} helperText={err('job_title')} />
       <TextField label={t('Annual salary')} type="number" value={form.salary} onChange={set('salary')}
         slotProps={{ htmlInput: { min: 0, step: 1000 }, input: { startAdornment: <InputAdornment position="start">$</InputAdornment> } }}

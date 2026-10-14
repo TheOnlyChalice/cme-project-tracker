@@ -28,7 +28,7 @@ class AuditTests(ApiTestCase):
 
     def test_role_and_team_changes_get_their_own_actions(self) -> None:
         self.ok("PATCH", f"/users/{uid('emp001')}", "adm001",
-                {"role": "manager", "manager_id": uid("adm001"), "job_title": "Lead"})
+                {"role": "manager", "job_title": "Lead"})
         actions = {e["action"] for e in self.ok("GET", "/audit-log", "adm001",
                                                 query={"entity_id": uid("emp001")})["entries"]}
         self.assertEqual(actions, {"assign_role", "assign_team", "update"})

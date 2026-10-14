@@ -104,11 +104,21 @@ password `ChangeMe123` (set `DEV_SEED_PASSWORD` to change it before first start)
 | Username | Role | Reports to | Notes |
 | --- | --- | --- | --- |
 | `adm001` | admin | - | Can do everything |
-| `mgr001` | manager | adm001 | Manages *Customer Portal Redesign* (healthy) |
-| `mgr002` | manager | adm001 | Manages *Data Center Migration* (at risk) |
-| `emp001` | employee | mgr001 | 30 h booked this week |
-| `emp002` | employee | mgr001 | 20 h booked this week |
+| `mgr001` | manager | - | Customer Portal Redesign, Mobile App Launch |
+| `mgr002` | manager | - | Data Center Migration (at risk), Onboarding Revamp (no milestones) |
+| `mgr003` | manager | - | Security Compliance Audit, Analytics Dashboard (going inactive) |
+| `emp001` | employee | mgr001 | Split across two projects, fully booked |
+| `emp002` | employee | mgr001 | |
 | `emp003` | employee | mgr002 | Fully booked (40 h) |
+| `emp004` | employee | mgr001 | Mobile App Launch |
+| `emp005` | employee | mgr002 | Free this week |
+| `emp006` | employee | mgr003 | Security audit |
+| `emp007` | employee | mgr003 | Security audit |
+| `emp008` | employee | mgr003 | Free this week |
+
+Admins can also see one completed project (Legacy CRM Retirement) and one
+abandoned project (Office Kiosk Pilot). Missing demo records are added on start
+without changing anything that already exists. Only employees have a manager.
 
 With PostgreSQL, data persists across restarts. With in-memory storage, it
 resets to the starter data every time the server starts.

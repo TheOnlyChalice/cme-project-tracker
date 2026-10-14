@@ -6,8 +6,11 @@ for layout changes on small screens. It talks to the Python API in
 
 ## Features
 
-- **Light and dark mode:** follows the computer's setting until you pick one
-  with the sun/moon button (top bar and login page); the choice is remembered.
+- **Light and dark mode:** ACME dark blue and white in both; follows the
+  computer's setting until you pick one with the sun/moon button (top bar and
+  login page); the choice is remembered.
+- **Collapsible sidebar:** the arrow at the bottom of the sidebar slides it
+  down to an icon-only rail (labels show as tooltips); remembered per browser.
 - **English and Spanish:** the EN | ES switch translates every screen,
   including backend error messages and risk flags, plus date and money formats.
   Translations live in `src/i18n/es.js`.
