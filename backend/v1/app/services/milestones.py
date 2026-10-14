@@ -34,13 +34,27 @@ def serialize_milestone(milestone: Record) -> Record:
         The milestone plus the employees who have hours on it.
     """
     # [MILESTONE ASSIGNEES HERE]
-    # How: assigned_employee_ids is worked out from active hour assignments.
+    # How: Worked out from the milestone's active hour bookings across every
+    #      week: the list of people (name and total hours, most hours first)
+    #      plus their IDs.
     # Why: Managers put people on a milestone by assigning them hours, so the
-    #      hours are the single source of truth for who works on what.
+    #      bookings are the single source of truth for who works on what.
+    #      Only names and hours are shared, so employees can see who is on
+    #      their team's milestones without seeing anyone's other details.
     data = dict(milestone)
     assignments = store.find("hour_assignments",
                              where={"milestone_id": milestone["id"], "is_archived": False})
-    data["assigned_employee_ids"] = sorted({a["user_id"] for a in assignments})
+    totals: dict[str, Any] = {}
+    for booking in assignments:
+        totals[booking["user_id"]] = totals.get(booking["user_id"], 0) + booking["hours"]
+    assignees = []
+    for user_id, hours in totals.items():
+        person = store.get("users", user_id) or {}
+        assignees.append({"user_id": user_id, "hours": hours,
+                          "name": f"{person.get('first_name', '')} {person.get('last_name', '')}".strip()})
+    assignees.sort(key=lambda a: (-a["hours"], a["name"]))
+    data["assigned_employee_ids"] = sorted(totals)
+    data["assignees"] = assignees
     return data
 
 

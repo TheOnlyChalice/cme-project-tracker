@@ -10,6 +10,13 @@ NEW_MILESTONE = {"name": "Beta test", "goal": "Test with 50 users",
 class MilestoneTests(ApiTestCase):
     """Creating, editing, completing, and archiving milestones."""
 
+    def test_milestone_lists_people_and_total_hours(self) -> None:
+        milestone = self.ok("GET", f"/milestones/{PORTAL_M2}", "emp002")
+        people = {a["name"]: a["hours"] for a in milestone["assignees"]}
+        self.assertEqual(people, {"Sam Lee": 50, "Jordan Kim": 20})
+        self.assertEqual(milestone["assignees"][0]["name"], "Sam Lee")
+        self.assertNotIn("salary", milestone["assignees"][0])
+
     def test_create_gets_next_sequence(self) -> None:
         m = self.ok("POST", f"/projects/{PORTAL}/milestones", "mgr001",
                     {**NEW_MILESTONE, "start_date": day(50), "end_date": day(60)}, expected=201)

@@ -6,7 +6,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import {
-  Box, Button, Card, CardContent, Chip, Divider, IconButton, List, ListItem, ListItemText,
+  Avatar, Box, Button, Card, CardContent, Chip, Divider, IconButton, List, ListItem, ListItemText,
   Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -215,8 +215,29 @@ export default function ProjectDetailPage() {
                   )}
                 </Box>
                 <Typography variant="body2" color="text.secondary">
-                  {formatDate(m.start_date)} – {formatDate(m.end_date)} · {t('{count} people with hours', { count: m.assigned_employee_ids.length })}
+                  {formatDate(m.start_date)} – {formatDate(m.end_date)}
                 </Typography>
+                {/* [MILESTONE PEOPLE HERE]
+                    How: Shows a chip for everyone booked on this milestone in any
+                         week, with their initials and total hours, most hours first.
+                    Why: The old "3 people with hours" count didn't say who, and
+                         didn't match the weekly table below when someone was only
+                         booked in another week. Names make the team visible. */}
+                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}
+                  aria-label={t('People on this milestone')}>
+                  {m.assignees.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">{t('No one is booked on this milestone yet.')}</Typography>
+                  )}
+                  {m.assignees.map((person) => (
+                    <Chip
+                      key={person.user_id}
+                      size="small"
+                      variant="outlined"
+                      avatar={<Avatar>{person.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</Avatar>}
+                      label={`${person.name} · ${formatHours(person.hours)}`}
+                    />
+                  ))}
+                </Stack>
                 {m.goal && <Typography sx={{ mt: 1 }}><strong>{t('Goal')}:</strong> {m.goal}</Typography>}
                 {m.deliverables.length > 0 && (
                   <List dense disablePadding sx={{ mt: 0.5 }}>
@@ -237,6 +258,9 @@ export default function ProjectDetailPage() {
         <WeekPicker week={week} onChange={setWeek} />
         {canManage && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({ type: 'assign' })}>{t('Assign hours')}</Button>}
       </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        {t('Showing the selected week. Each milestone above lists everyone booked on it in any week.')}
+      </Typography>
       <ErrorAlert error={hours.error} onRetry={hours.reload} />
       {hours.data && hours.data.length === 0 && <Typography color="text.secondary">{t('No hours booked on this project that week.')}</Typography>}
       {hours.data && hours.data.length > 0 && (

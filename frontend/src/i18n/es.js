@@ -191,6 +191,10 @@ const es = {
   Overdue: 'Atrasado',
   'Mark complete': 'Marcar como completado',
   '{count} people with hours': '{count} personas con horas',
+  'People on this milestone': 'Personas en este hito',
+  'No one is booked on this milestone yet.': 'Todavía no hay nadie reservado en este hito.',
+  'Showing the selected week. Each milestone above lists everyone booked on it in any week.':
+    'Se muestra la semana seleccionada. Cada hito de arriba muestra a todas las personas reservadas en cualquier semana.',
   Goal: 'Objetivo',
   'Hours booked': 'Horas reservadas',
   'Assign hours': 'Asignar horas',
