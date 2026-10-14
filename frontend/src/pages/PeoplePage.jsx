@@ -8,6 +8,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -36,6 +37,7 @@ import { isAdmin } from '../utils/roles.js';
 export default function PeoplePage() {
   const { user } = useAuth();
   const t = useT();
+  const navigate = useNavigate();
   const admin = isAdmin(user);
   const isMobile = useIsMobile();
   const notify = useNotify();
@@ -101,7 +103,16 @@ export default function PeoplePage() {
             </TableHead>
             <TableBody>
               {pager.pageItems.map((person) => (
-                <TableRow key={person.id} sx={{ opacity: person.is_archived ? 0.6 : 1 }}>
+                <TableRow key={person.id} hover
+                  sx={{ opacity: person.is_archived ? 0.6 : 1, cursor: 'pointer' }}
+                  // [PERSON ROW LINK HERE]
+                  // How: Clicking a row opens that person's page (unless text was
+                  //      being selected, or a button in the row was clicked).
+                  // Why: The directory is the natural way into someone's details.
+                  onClick={(event) => {
+                    if (event.target.closest('button') || window.getSelection()?.toString()) return;
+                    navigate(`/people/${person.id}`);
+                  }}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Avatar src={person.profile_picture_url || undefined} sx={{ width: 32, height: 32 }}>

@@ -206,6 +206,7 @@ All paths are under `/api/v1`. Errors always look like
 | GET | `/insights/at-risk` | any user (filtered by role) |
 | GET | `/insights/utilization?week=` | any user (filtered by role) |
 | GET | `/insights/timeline` | any user (filtered by role) |
+| GET | `/projects/{id}/cost-series` | managers and admins who can see the project |
 | GET | `/insights/capacity?start=&weeks=` | any user (filtered by role) |
 | POST | `/admin/maintenance` | admin |
 | GET | `/projects/{id}/audit-log?actor_id=&action=&entity_type=&from=&to=&limit=&offset=` | admin |

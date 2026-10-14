@@ -1,9 +1,10 @@
 import {
-  Box, Chip, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
+  Box, Chip, Link, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
   TablePagination, TableRow, TextField, Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { api } from '../api/client.js';
 import useIsMobile from '../hooks/useIsMobile.js';
 import useLoader from '../hooks/useLoader.js';
@@ -95,12 +96,28 @@ export default function AuditLogTable({ path, itemTypes, itemName = () => '' }) 
                 {data.entries.map((entry) => (
                   <TableRow key={entry.id} sx={{ verticalAlign: 'top' }}>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(entry.created_at)}</TableCell>
-                    <TableCell>{entry.actor_id ? names[entry.actor_id] || t('Unknown') : t('System')}</TableCell>
+                    <TableCell>
+                      {/* [AUDIT LINKS HERE]
+                          How: The person who made a change, and a person who was
+                               changed, link to their person page.
+                          Why: Following up on an audit entry usually means looking
+                               at that person next. */}
+                      {entry.actor_id && names[entry.actor_id]
+                        ? <Link component={RouterLink} to={`/people/${entry.actor_id}`} underline="hover" color="inherit">{names[entry.actor_id]}</Link>
+                        : (entry.actor_id ? t('Unknown') : t('System'))}
+                    </TableCell>
                     <TableCell><Chip size="small" label={t(ACTIONS[entry.action] || entry.action)} /></TableCell>
                     {!isMobile && (
                       <TableCell>
                         {t(ITEM_TYPES[entry.entity_type] || entry.entity_type)}
-                        {itemName(entry, names) && <><br /><Typography variant="caption">{itemName(entry, names)}</Typography></>}
+                        {itemName(entry, names) && (
+                          <>
+                            <br />
+                            {entry.entity_type === 'user'
+                              ? <Link component={RouterLink} to={`/people/${entry.entity_id}`} underline="hover" variant="caption">{itemName(entry, names)}</Link>
+                              : <Typography variant="caption">{itemName(entry, names)}</Typography>}
+                          </>
+                        )}
                       </TableCell>
                     )}
                     <TableCell>

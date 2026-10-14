@@ -5,14 +5,16 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import {
-  Box, Button, Card, CardContent, IconButton, InputAdornment, LinearProgress, MenuItem, Paper, Stack, Table, TableBody,
+  Box, Button, Card, CardContent, IconButton, InputAdornment, LinearProgress, Link, MenuItem, Paper, Stack, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import CapacityHeatMap from '../components/CapacityHeatMap.jsx';
+import CapacityBars from '../components/charts/CapacityBars.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import AssignHoursDialog from '../components/forms/AssignHoursDialog.jsx';
@@ -237,8 +239,9 @@ function TeamPlanner({ user }) {
           )}
           {grid.data && heatRows.length > 0 && (
             <>
+              <CapacityBars weeks={grid.data.weeks} people={heatRows} selectedWeek={week} onSelectWeek={pickWeek} />
               <CapacityHeatMap weeks={grid.data.weeks} people={heatPager.pageItems} currentWeek={thisWeek}
-                selectedWeek={week} onSelectWeek={pickWeek} />
+                selectedWeek={week} onSelectWeek={pickWeek} linkPeople />
               <Paginator pager={heatPager} options={[15, 30, 60]} label="People per page:" />
             </>
           )}
@@ -271,7 +274,11 @@ function TeamPlanner({ user }) {
                     const editable = project && canManageProject(user, project) && a.week_start >= thisWeek;
                     return (
                       <TableRow key={a.id}>
-                        <TableCell>{names[a.user_id] || t('Employee')}</TableCell>
+                        <TableCell>
+                          {names[a.user_id]
+                            ? <Link component={RouterLink} to={`/people/${a.user_id}`} underline="hover" color="inherit">{names[a.user_id]}</Link>
+                            : t('Employee')}
+                        </TableCell>
                         {!isMobile && <TableCell>{project?.name || '—'}</TableCell>}
                         <TableCell>{milestones[a.milestone_id]?.name || '—'}</TableCell>
                         <TableCell align="right">{formatHours(a.hours)}</TableCell>

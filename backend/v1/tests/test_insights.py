@@ -86,3 +86,22 @@ class TimelineCapacityTests(ApiTestCase):
         self.assertEqual([w["hours"] for w in sam["weeks"]], [30, 20, 0])
         self.assertEqual(len(self.ok("GET", "/insights/capacity", "emp001")["people"]), 1)
         self.assertEqual(len(self.ok("GET", "/insights/capacity", "adm001", query={"weeks": "x"})["weeks"]), 6)
+
+
+class CostSeriesTests(ApiTestCase):
+    """Weekly cumulative cost for the budget burn chart."""
+
+    def test_running_totals_and_forecast(self) -> None:
+        series = self.ok("GET", f"/projects/{MIGRATION}/cost-series", "mgr002")
+        self.assertEqual(len(series["weeks"]), len(series["to_date"]))
+        this = series["weeks"].index(series["this_week"])
+        self.assertEqual(series["to_date"][this], series["forecast"][this])
+        self.assertIsNone(series["to_date"][-1])
+        self.assertIsNone(series["forecast"][0])
+        self.assertAlmostEqual(series["to_date"][this], 12384.62, places=1)
+        self.assertAlmostEqual(series["forecast"][-1], 14153.85, places=1)
+        self.assertEqual(series["budget"], 12000)
+
+    def test_employees_and_outsiders_are_refused(self) -> None:
+        self.error("GET", f"/projects/{MIGRATION}/cost-series", "emp003", 403, "forbidden")
+        self.error("GET", f"/projects/{MIGRATION}/cost-series", "mgr001", 404)

@@ -7,6 +7,7 @@ import HoursPage from './pages/HoursPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import PeoplePage from './pages/PeoplePage.jsx';
+import PersonPage from './pages/PersonPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import ProjectDetailPage from './pages/ProjectDetailPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="projects/:id" element={<ProjectDetailPage />} />
           <Route path="hours" element={<HoursPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="people/:id" element={<PersonPage />} />
           <Route element={<RequireAuth role="manager" />}>
             <Route path="people" element={<PeoplePage />} />
           </Route>

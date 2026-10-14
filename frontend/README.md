@@ -31,6 +31,15 @@ Plex Sans body text, a navy sidebar with the ACME mark, and a white work area.
 - **English and Spanish:** the EN | ES switch translates every screen,
   including backend error messages and risk flags, plus date and money formats.
   Translations live in `src/i18n/es.js`.
+- **Charts (MUI X Charts):** a clickable project status donut on the
+  dashboard (filters the timeline), a budget burn chart on each project page
+  (cost so far, forecast, and budget), and booked-versus-free team hours per
+  week above the heat map (click a week to select it).
+- **Everything leads somewhere:** banner numbers, timeline bars (open the
+  milestone on its project page), "Milestones due" items, people's names
+  (open their person page), audit entries, and breadcrumbs on detail pages.
+- **Person pages** (`/people/:id`): role, manager or team, projects, the next
+  six weeks of hours, and quick "Assign hours" for their manager.
 - **Paging and filters for big lists:** the timeline (8 projects per page,
   "At risk only" switch), Needs attention, team capacity, project health,
   projects, people, the heat map (with name search and a team filter for

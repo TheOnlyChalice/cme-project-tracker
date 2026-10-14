@@ -367,3 +367,57 @@ def capacity(actor: Record, start: str | None, weeks: str | None) -> Record:
             person["weeks"].append({"week_start": monday, "hours": row["assigned"]})
     ordered = sorted(people.values(), key=lambda p: p["name"])
     return {"weeks": mondays, "capacity": CAPACITY, "people": ordered}
+
+
+# [BUDGET BURN DATA HERE]
+# How: For one project, adds up labor cost (hours x salary / 2,080) week by
+#      week from the project's first week to its last. "to_date" is the
+#      running total for weeks up to this one; "forecast" carries on from this
+#      week through every future booking. Managers and admins only, and only
+#      totals are returned, never anyone's salary.
+# Why: Feeds the budget burn chart: where the cost line crosses the budget
+#      line is where the project goes over, so it turns "budget used vs
+#      planned" into something you can see coming.
+def cost_series(actor: Record, project: Record) -> Record:
+    """
+    Weekly cumulative labor cost for a project.
+
+    Args:
+        actor: The acting user (manager or admin).
+        project: The project (already checked as visible).
+
+    Returns:
+        {"weeks", "to_date", "forecast", "budget", "this_week"}; values are
+        None where a line shouldn't be drawn.
+    """
+    if actor.get("role") == EMPLOYEE:
+        from app.responses import ApiError  # pylint: disable=import-outside-toplevel
+        raise ApiError(403, "forbidden", "You don't have permission to do this.")
+    salaries = {u["id"]: u.get("salary") for u in store.find("users")}
+    weekly: dict[str, Decimal] = {}
+    for booking in store.find("hour_assignments", where={"project_id": project["id"], "is_archived": False}):
+        salary = salaries.get(booking["user_id"])
+        if salary is None:
+            continue
+        cost = booking["hours"] * Decimal(salary) / WORK_HOURS_PER_YEAR
+        weekly[booking["week_start"]] = weekly.get(booking["week_start"], Decimal("0")) + cost
+
+    first = clock.week_start_of(date.fromisoformat(project["start_date"]))
+    last = clock.week_start_of(date.fromisoformat(project["end_date"]))
+    if weekly:
+        first = min(first, date.fromisoformat(min(weekly)))
+        last = max(last, date.fromisoformat(max(weekly)))
+    this_week = clock.current_week_start().isoformat()
+    weeks, to_date, forecast = [], [], []
+    running = Decimal("0")
+    cents = Decimal("0.01")
+    monday = first
+    while monday <= last and len(weeks) < 104:
+        iso = monday.isoformat()
+        running += weekly.get(iso, Decimal("0"))
+        weeks.append(iso)
+        to_date.append(running.quantize(cents) if iso <= this_week else None)
+        forecast.append(running.quantize(cents) if iso >= this_week else None)
+        monday += timedelta(weeks=1)
+    return {"weeks": weeks, "to_date": to_date, "forecast": forecast,
+            "budget": project.get("budget"), "this_week": this_week}

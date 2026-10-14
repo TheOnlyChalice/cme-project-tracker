@@ -1,4 +1,4 @@
-import { Box, Chip, Link, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
+import { Box, ButtonBase, Chip, Link, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -44,7 +44,7 @@ function barSx(state) {
 //      and what's slipping?" in one glance, shows the milestone dependency
 //      chain visually, and makes the date-shifting feature easy to see.
 /** Gantt-style lanes of milestone bars with a today marker. */
-export default function PortfolioTimeline({ lanes, title, actions, linkLanes = true }) {
+export default function PortfolioTimeline({ lanes, title, actions, linkLanes = true, onBarClick }) {
   const t = useT();
   const isMobile = useIsMobile();
   const [zoom, setZoom] = useState('months');
@@ -144,10 +144,17 @@ export default function PortfolioTimeline({ lanes, title, actions, linkLanes = t
                   if (right <= 0 || left >= 100) return null;
                   return (
                     <Tooltip key={bar.id} title={`${bar.label} · ${formatDate(bar.start)} – ${formatDate(bar.end)} · ${t(STATE_LABELS[bar.state])}`}>
-                      <Box
+                      {/* [CLICKABLE TIMELINE BARS HERE]
+                          How: Each bar is a button: clicking it (or Enter) opens
+                               that milestone on its project page.
+                          Why: Seeing a slipping milestone and getting to it should
+                               be one click, not a search. */}
+                      <ButtonBase
+                        onClick={onBarClick ? () => onBarClick(lane.id, bar.id) : undefined}
                         tabIndex={0}
                         aria-label={`${bar.label}, ${formatDate(bar.start)} – ${formatDate(bar.end)}, ${t(STATE_LABELS[bar.state])}`}
                         sx={{
+                          justifyContent: 'flex-start', cursor: onBarClick ? 'pointer' : 'default',
                           ...barSx(bar.state), position: 'absolute', top: 18, height: 28, left: `${left}%`,
                           width: `${Math.max(right - left - 0.3, 0.6)}%`, boxSizing: 'border-box', display: 'flex', alignItems: 'center',
                           px: 1.25, fontSize: 12, fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
@@ -156,8 +163,8 @@ export default function PortfolioTimeline({ lanes, title, actions, linkLanes = t
                           '&:hover, &:focus-visible': { filter: 'brightness(1.08)' },
                         }}
                       >
-                        {bar.label}
-                      </Box>
+                        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{bar.label}</Box>
+                      </ButtonBase>
                     </Tooltip>
                   );
                 })}
@@ -191,4 +198,5 @@ PortfolioTimeline.propTypes = {
   title: PropTypes.node,
   actions: PropTypes.node,
   linkLanes: PropTypes.bool,
+  onBarClick: PropTypes.func,
 };

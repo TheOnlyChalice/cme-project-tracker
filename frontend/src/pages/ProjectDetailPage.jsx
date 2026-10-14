@@ -6,14 +6,15 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import {
-  Avatar, Box, Button, Card, CardContent, Chip, Divider, IconButton, List, ListItem, ListItemText,
+  Avatar, Box, Breadcrumbs, Button, Card, CardContent, Chip, Divider, IconButton, Link, List, ListItem, ListItemText,
   Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.js';
 import AuditLogTable from '../components/AuditLogTable.jsx';
+import BudgetBurnChart from '../components/charts/BudgetBurnChart.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import AssignHoursDialog from '../components/forms/AssignHoursDialog.jsx';
@@ -33,7 +34,7 @@ import useLoader from '../hooks/useLoader.js';
 import usePagination from '../hooks/usePagination.js';
 import { useT } from '../i18n/LanguageContext.js';
 import { formatDate, formatHours, formatMoney, fullName, mondayOf } from '../utils/format.js';
-import { canManageProject, isAdmin } from '../utils/roles.js';
+import { canManageProject, isAdmin, isManager } from '../utils/roles.js';
 
 // [PROJECT DETAIL HERE]
 // How: One page per project with its health numbers, the milestone chain,
@@ -53,6 +54,11 @@ export default function ProjectDetailPage() {
   const [week, setWeek] = useState(mondayOf());
   const [dialog, setDialog] = useState(null);
 
+  const [params] = useSearchParams();
+  const focusMilestone = params.get('milestone');
+  const [highlighted, setHighlighted] = useState(null);
+  const canSeeMoney = isManager(user);
+
   const main = useLoader(async () => {
     const [project, health, milestones, chain, users] = await Promise.all([
       api(`/projects/${id}`),
@@ -61,7 +67,8 @@ export default function ProjectDetailPage() {
       api(`/projects/${id}/milestone-chain`),
       api('/users'),
     ]);
-    return { project, health, milestones: milestones.milestones, chain: chain.milestones, users: users.users };
+    const costs = canSeeMoney ? await api(`/projects/${id}/cost-series`).catch(() => null) : null;
+    return { project, health, milestones: milestones.milestones, chain: chain.milestones, users: users.users, costs };
   }, [id, admin]);
 
   const hours = useLoader(
@@ -69,6 +76,27 @@ export default function ProjectDetailPage() {
     [id, week],
   );
   const hoursPager = usePagination(hours.data, 10);
+
+  // [JUMP TO MILESTONE HERE]
+  // How: Arriving with ?milestone=<id> (from a timeline bar or the "due soon"
+  //      list), or clicking a bar on this page's timeline, scrolls to that
+  //      milestone's card and outlines it in amber for a few seconds.
+  // Why: The click lands exactly on the thing that was clicked, not just on
+  //      the right page.
+  const showMilestone = (milestoneId) => {
+    document.getElementById(`milestone-${milestoneId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlighted(milestoneId);
+  };
+  useEffect(() => {
+    if (!focusMilestone || !main.data) return undefined;
+    const timer = setTimeout(() => showMilestone(focusMilestone), 150);
+    return () => clearTimeout(timer);
+  }, [focusMilestone, main.data]);
+  useEffect(() => {
+    if (!highlighted) return undefined;
+    const timer = setTimeout(() => setHighlighted(null), 3000);
+    return () => clearTimeout(timer);
+  }, [highlighted]);
 
   if (main.loading && !main.data) return <Loading label="Loading project" />;
   if (main.error) {
@@ -142,9 +170,25 @@ export default function ProjectDetailPage() {
 
   return (
     <>
+      {/* [BREADCRUMBS HERE]
+          How: A trail above the title (Projects > this project) to step back up.
+          Why: Detail pages are reached from many places (dashboard, timeline,
+               search); the trail always shows where you are and one way out. */}
+      <Breadcrumbs aria-label={t('Breadcrumb')} sx={{ mb: 1 }}>
+        <Link component={RouterLink} to="/projects" underline="hover" color="inherit">{t('Projects')}</Link>
+        <Typography color="text.primary">{project.name}</Typography>
+      </Breadcrumbs>
       <PageHeader
         title={project.name}
-        subtitle={`${t('Managed by {name}', { name: people[project.manager_id] ? fullName(people[project.manager_id]) : t('another manager') })} · ${formatDate(project.start_date)} – ${formatDate(project.end_date)}`}
+        subtitle={(
+          <>
+            {t('Managed by')}{' '}
+            {people[project.manager_id] && canSeeMoney
+              ? <Link component={RouterLink} to={`/people/${project.manager_id}`} underline="hover">{fullName(people[project.manager_id])}</Link>
+              : (people[project.manager_id] ? fullName(people[project.manager_id]) : t('another manager'))}
+            {` · ${formatDate(project.start_date)} – ${formatDate(project.end_date)}`}
+          </>
+        )}
         actions={(
           <>
             {canManage && <Button startIcon={<EditIcon />} onClick={() => setDialog({ type: 'edit' })}>{t('Edit')}</Button>}
@@ -182,6 +226,15 @@ export default function ProjectDetailPage() {
         ) : <StatCard label={t('Last activity')} value={formatDate(health.last_activity_at)} />}
       </Box>
 
+      {main.data.costs && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" component="h2" gutterBottom>{t('Budget burn')}</Typography>
+            <BudgetBurnChart series={main.data.costs} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* [PROJECT TIMELINE HERE]
           How: The same timeline as the dashboard, with one lane for this
                project, so its milestones show as bars against today.
@@ -193,6 +246,7 @@ export default function ProjectDetailPage() {
             <PortfolioTimeline
               title={t('Timeline')}
               linkLanes={false}
+              onBarClick={(_, milestoneId) => showMilestone(milestoneId)}
               lanes={[{
                 id: project.id,
                 name: project.name,
@@ -229,7 +283,12 @@ export default function ProjectDetailPage() {
           const link = chainById[m.id] || {};
           const editable = canManage && m.status === 'active' && !m.is_archived;
           return (
-            <Card key={m.id} sx={{ opacity: m.is_archived ? 0.6 : 1, borderColor: link.overdue ? 'warning.main' : undefined }}>
+            <Card key={m.id} id={`milestone-${m.id}`}
+              sx={{
+                opacity: m.is_archived ? 0.6 : 1, borderColor: link.overdue ? 'warning.main' : undefined, scrollMarginTop: 96,
+                outline: highlighted === m.id ? '3px solid' : 'none', outlineColor: 'brand.accent',
+                transition: (theme) => theme.transitions.create('outline-color'),
+              }}>
               <CardContent>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
                   <Typography variant="subtitle1" fontWeight={600} sx={{ flexGrow: 1 }}>
@@ -271,6 +330,7 @@ export default function ProjectDetailPage() {
                       variant="outlined"
                       avatar={<Avatar>{person.name.split(' ').map((part) => part[0]).join('').slice(0, 2)}</Avatar>}
                       label={`${person.name} · ${formatHours(person.hours)}`}
+                      {...(canSeeMoney ? { component: RouterLink, to: `/people/${person.user_id}`, clickable: true } : {})}
                     />
                   ))}
                 </Stack>
@@ -313,7 +373,11 @@ export default function ProjectDetailPage() {
             <TableBody>
               {hoursPager.pageItems.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell>{people[a.user_id] ? fullName(people[a.user_id]) : t('Teammate')}</TableCell>
+                  <TableCell>
+                    {people[a.user_id] && canSeeMoney
+                      ? <Link component={RouterLink} to={`/people/${a.user_id}`} underline="hover" color="inherit">{fullName(people[a.user_id])}</Link>
+                      : (people[a.user_id] ? fullName(people[a.user_id]) : t('Teammate'))}
+                  </TableCell>
                   <TableCell>{milestones.find((m) => m.id === a.milestone_id)?.name || '—'}</TableCell>
                   <TableCell align="right">{formatHours(a.hours)}</TableCell>
                   {canManage && (

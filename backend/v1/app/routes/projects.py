@@ -82,6 +82,12 @@ def register(router: Router) -> None:
         project = projects.get_visible_project(actor, request.path_params["id"])
         return json_response(200, list_project_audit(project["id"], request.query))
 
+    def costs(request: Request) -> dict[str, Any]:
+        """Weekly cumulative labor cost for the budget burn chart."""
+        actor = current_user(request)
+        project = projects.get_visible_project(actor, request.path_params["id"])
+        return json_response(200, insights.cost_series(actor, project))
+
     router.add("GET", "/projects", list_all)
     router.add("POST", "/projects", create)
     router.add("GET", "/projects/{id}", get_one)
@@ -93,3 +99,4 @@ def register(router: Router) -> None:
     router.add("GET", "/projects/{id}/health", health)
     router.add("GET", "/projects/{id}/milestone-chain", chain)
     router.add("GET", "/projects/{id}/audit-log", audit)
+    router.add("GET", "/projects/{id}/cost-series", costs)

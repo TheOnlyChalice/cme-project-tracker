@@ -1,5 +1,6 @@
-import { Box, ButtonBase, Tooltip, Typography } from '@mui/material';
+import { Box, ButtonBase, Link, Tooltip, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
+import { Link as RouterLink } from 'react-router-dom';
 import { useT } from '../i18n/LanguageContext.js';
 import { formatDate, formatHours } from '../utils/format.js';
 
@@ -23,7 +24,7 @@ function bucket(hours) {
 //      weeks at once, which a single-week list can't show, and turns the
 //      40-hour rule into something visible.
 /** People-by-week grid of booked hours. */
-export default function CapacityHeatMap({ weeks, people, currentWeek, selectedWeek, onSelectWeek }) {
+export default function CapacityHeatMap({ weeks, people, currentWeek, selectedWeek, onSelectWeek, linkPeople = false }) {
   const t = useT();
   const textFor = (level) => (level >= 3 ? (level === 4 ? 'brand.accentText' : 'common.white') : 'text.primary');
   const legend = [[0, t('Free')], [1, '1–19 h'], [2, '20–34 h'], [3, '35–39 h'], [4, t('Full (40 h)')]];
@@ -45,7 +46,11 @@ export default function CapacityHeatMap({ weeks, people, currentWeek, selectedWe
           ))}
           {people.map((person) => (
             <Box key={person.user_id} role="row" sx={{ display: 'contents' }}>
-              <Typography role="rowheader" noWrap sx={{ alignSelf: 'center', fontWeight: 500, pr: 1 }}>{person.name}</Typography>
+              <Typography role="rowheader" noWrap sx={{ alignSelf: 'center', fontWeight: 500, pr: 1 }}>
+                {linkPeople
+                  ? <Link component={RouterLink} to={`/people/${person.user_id}`} underline="hover" color="inherit">{person.name}</Link>
+                  : person.name}
+              </Typography>
               {person.weeks.map((cell) => {
                 const level = bucket(cell.hours);
                 return (
@@ -99,4 +104,5 @@ CapacityHeatMap.propTypes = {
   currentWeek: PropTypes.string,
   selectedWeek: PropTypes.string,
   onSelectWeek: PropTypes.func.isRequired,
+  linkPeople: PropTypes.bool,
 };
